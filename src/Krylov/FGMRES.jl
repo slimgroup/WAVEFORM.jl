@@ -1,0 +1,85 @@
+function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6)
+    T = eltype(A)
+    n = size(A,2)
+    
+    size(A,1)==size(A,2) || throw(ArgumentError("A must be square"))
+    size(b,1)==n || throw(ArgumentError("A and b must have compatible dimensions"))
+    size(b,2)==1 || throw(ArgumentError("b must be a vector"))
+    length(x0)==0 || length(x0)==n || throw(ArgumentErrror("x0 must be empty or a vector with size compatible with A"))
+    if length(x0)==0 || norm(x0)<1e-10
+        x = zeros(T,size(A,2))
+        r = b
+    else
+        x = x0
+        r = b - A*x
+    end
+    normr0 = norm(r)
+    ej = zeros(T,m+1)
+    ej[1] = 1
+    if precond==nothing
+        P = x->x
+        prec_dirac = true
+    else
+        P = x->P*x
+        prec_dirac = false
+    end
+    
+    hst = Array{Float64,1}()
+    push!(hst,1.0)
+    res = Array{Float64,1}()
+    push!(res,1.0)
+    it_counter = 1
+    while hst[end] > tol && div(it_counter,m)<maxiter
+       
+        if prec_dirac
+            Z = zeros(T,n,m+1)
+        else
+            Z = zeros(T,n,m+1)
+            V = zeros(T,n,m+1)
+        end
+        H = zeros(T,m+1,m)
+        y = zeros(T,m)
+        beta = norm(r)
+        if prec_dirac
+            Z[:,1] = r/beta
+        else
+            V[:,1] = r/beta
+        end
+        j = 1
+        for k=1:m
+            if !prec_dirac
+                Z[:,k] = P(V[:,k])
+            end
+            w = A*Z[:,k]
+
+            if prec_dirac
+                H[1:k,k] = Z[:,1:k]'*w
+                w = w-Z[:,1:k]*H[1:k,k]
+            else
+                H[1:k,k] = V[:,1:k]'*w
+                w = w-V[:,1:k]*H[1:k,k]
+            end
+            H[k+1,k] = norm(w)
+            if prec_dirac
+                Z[:,k+1] = w./H[k+1,k]
+            else
+                V[:,k+1] = w./H[k+1,k]
+            end
+            y[1:k] = H[1:k+1,1:k]\(beta*ej[1:k+1])
+            push!(hst,norm(beta*ej[1:k+1]-H[1:k+1,1:k]*y[1:k])/normr0)
+            j+=1
+            if hst[end] < tol
+                break
+            end
+            it_counter += 1
+        end
+        x = x + Z[:,1:j-1]*y[1:j-1]
+        r = b - A*x
+        if norm(r)/normr0<tol
+            break
+        end
+        println("it $(div(it_counter,m)) res $(norm(r))")
+        push!(res,norm(r))
+    end
+    return x
+end
