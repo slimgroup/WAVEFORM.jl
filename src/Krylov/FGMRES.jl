@@ -1,4 +1,4 @@
-function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6)
+function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6, output_freq=0)
     T = eltype(A)
     n = size(A,2)
     
@@ -51,7 +51,7 @@ function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6)
                 Z[:,k] = P(V[:,k])
             end
             w = A*Z[:,k]
-
+            
             if prec_dirac
                 H[1:k,k] = Z[:,1:k]'*w
                 w = w-Z[:,1:k]*H[1:k,k]
@@ -65,9 +65,12 @@ function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6)
             else
                 V[:,k+1] = w./H[k+1,k]
             end
-            y[1:k] = H[1:k+1,1:k]\(beta*ej[1:k+1])
+            y[1:k] = H[1:k+1,1:k]\(beta*ej[1:k+1])            
+
             push!(hst,norm(beta*ej[1:k+1]-H[1:k+1,1:k]*y[1:k])/normr0)
             j+=1
+
+            
             if hst[end] < tol
                 break
             end
@@ -75,11 +78,13 @@ function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6)
         end
         x = x + Z[:,1:j-1]*y[1:j-1]
         r = b - A*x
+        if output_freq > 0 && mod(div(it_counter,m),output_freq)==0
+            @printf("it %3d res %3.3e\n",div(it_counter,m), norm(r)/normr0)
+        end
+        push!(res,norm(r))
         if norm(r)/normr0<tol
             break
         end
-        println("it $(div(it_counter,m)) res $(norm(r))")
-        push!(res,norm(r))
     end
     return x
 end
