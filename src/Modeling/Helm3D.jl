@@ -1,4 +1,5 @@
 
+using ParallelAccelerator
 
 function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3})
 """
@@ -36,12 +37,12 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
     wm2 = 0.07516874999999999
     wm3 = 0.004373916666666667
     wm4 = 5.690375e-7
-    w3a = (0.041214225/hxyz)::F
+    w3a = (2*0.041214225/hxyz)::F
 
-    cx = - (w1/hx + w2/hx + w2/hxz + w2/hxy + 8*w3a)
-    cy = - (w1/hy + w2/hy + w2/hyz + w2/hxy + 8*w3a)
-    cz = - (w1/hz + w2/hz + w2/hxz + w2/hyz + 8*w3a)
-    cNNN = - (w1 + 3*w2 + (16*w3a*hxyz)/3 + wm1-1)
+    cx = - (w1/hx + w2/hx + w2/hxz + w2/hxy + 4*w3a)
+    cy = - (w1/hy + w2/hy + w2/hyz + w2/hxy + 4*w3a)
+    cz = - (w1/hz + w2/hz + w2/hxz + w2/hyz + 4*w3a)
+    cNNN = - (w1 + 3*w2 + (8*w3a*hxyz)/3 + wm1-1)
 
     xz_coef = w2/(2*hxz)
     xy_coef = w2/(2*hxy)
@@ -49,34 +50,56 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
     wn_window = zeros(F,3,3,3)
     coef = zeros(Complex{F},3,3,3)
     x_window = zeros(Complex{F},3,3,3)
-
+    y = zeros(Complex{F},nx,ny,nz)
+    zero_x = complex(0,0)
+    zero_w = convert(F,0)
+    
     for k = 1:nz
-        ks = (k > 1)? -1 : 0
-        ke = (k < nz)? 1 : 0
-        zoff = ks:ke        
+        cxz = xz_coef*pz[k]
+	    cxzlo = xz_coef*pz_lo[k]
+	    cxzhi = xz_coef*pz_hi[k]
+	    cyz = yz_coef*pz[k]
+	    cyzlo = yz_coef*pz_lo[k]
+	    cyzhi = yz_coef*pz_hi[k]
         for j = 1:ny
-            js = (j > 1)? -1 : 0
-            je = (j < ny)? 1 : 0
-            yoff = js:je
+            c1 = xy_coef*py[j] + cxz
+		    c2_lo = cy*py_lo[j] + cyz
+		    c2_hi = cy*py_hi[j] + cyz
+		    c3_lo = yz_coef*py[j] + cz*pz_lo[k]
+		    c3_hi = yz_coef*py[j] + cz*pz_hi[k]
+
+            dyzLL = - yz_coef*py_lo[j] - yz_coef*pz_lo[k]
+            dyzLH = - yz_coef*py_lo[j] - yz_coef*pz_hi[k]
+            dyzHL = - yz_coef*py_hi[j] - yz_coef*pz_lo[k]
+            dyzHH = - yz_coef*py_hi[j] - yz_coef*pz_hi[k]
+
+            eyzL = w3a*py[j] - xz_coef*pz_lo[k]
+            eyzH = w3a*py[j] - xz_coef*pz_hi[k]
+            fyzL = - xy_coef*py_lo[j] + w3a*pz[k]
+            fyzH = - xy_coef*py_hi[j] + w3a*pz[k]
+            gyzLL = py_lo[j] + pz_lo[k]
+            gyzLH = py_lo[j] + pz_hi[k]
+            gyzHL = py_hi[j] + pz_lo[k]
+            gyzHH = py_hi[j] + pz_hi[k]
+            
             for i = 1:nx
-                is = (i > 1)? -1 : 0
-                ie = (i < nx) ? 1 : 0
-                xoff = is:ie
-                # Load wn_window              
-			    wn_window[2+xoff,2+yoff,2+zoff] = wn[i+xoff,j+yoff,k+zoff]
-                x_window[2+xoff,2+yoff,2+zoff] = x[i+xoff,j+yoff,k+zoff]
-                cxz = xz_coef*pz[k]
-	            cxzlo = xz_coef*pz_lo[k]
-	            cxzhi = xz_coef*pz_hi[k]
-	            cyz = yz_coef*pz[k]
-	            cyzlo = yz_coef*pz_lo[k]
-	            cyzhi = yz_coef*pz_hi[k]
-                
-                c1 = xy_coef*py[j] + cxz
-		        c2_lo = cy*py_lo[j] + cyz
-		        c2_hi = cy*py_hi[j] + cyz
-		        c3_lo = yz_coef*py[j] + cz*pz_lo[k]
-		        c3_hi = yz_coef*py[j] + cz*pz_hi[k]
+                # Load wn_window + x_window             
+                 for kk=1:3
+                    load_z = k+kk-2 > 0 && k+kk-2<=nz;
+                    for jj=1:3
+                        load_y = j+jj-2 > 0 && j+jj-2<=ny;
+                        for ii=1:3
+                            load_x = i+ii-2 > 0 && i+ii-2<=nx;
+                            if load_x & load_y & load_z
+                                x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
+                                wn_window[ii,jj,kk] = wn[i+ii-2,j+jj-2,k+kk-2]                                
+                            else
+                                x_window[ii,jj,kk] = zero_x
+                                wn_window[ii,jj,kk] = zero_w
+                            end                            
+                        end
+                    end
+                end                                               
                 
 			    coef[M,N,N] = cx*px_lo[i] + c1 - wm2 * wn_window[M,N,N]			
 			    coef[P,N,N] = cx*px_hi[i] + c1 - wm2 * wn_window[P,N,N]                
@@ -85,33 +108,34 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
 			    coef[N,N,M] = xz_coef*px[i] + c3_lo - wm2 * wn_window[N,N,M]
 			    coef[N,N,P] = xz_coef*px[i] + c3_hi - wm2 * wn_window[N,N,P]
 
-			    coef[N,M,M] = 2*w3a*px[i] - yz_coef*py_lo[j] - yz_coef*pz_lo[k] - wm3 * wn_window[N,M,M]
-			    coef[N,M,P] = 2*w3a*px[i] - yz_coef*py_lo[j] - yz_coef*pz_hi[k] - wm3 * wn_window[N,M,P]
-			    coef[N,P,M] = 2*w3a*px[i] - yz_coef*py_hi[j] - yz_coef*pz_lo[k] - wm3 * wn_window[N,P,M]
-			    coef[N,P,P] = 2*w3a*px[i] - yz_coef*py_hi[j] - yz_coef*pz_hi[k] - wm3 * wn_window[N,P,P]
-			    coef[M,N,M] = -xz_coef*px_lo[i] + 2*w3a*py[j] - xz_coef*pz_lo[k] - wm3 * wn_window[M,N,M]
-			    coef[M,N,P] = -xz_coef*px_lo[i] + 2*w3a*py[j] - xz_coef*pz_hi[k] - wm3 * wn_window[M,N,P]
-			    coef[P,N,M] = -xz_coef*px_hi[i] + 2*w3a*py[j] - xz_coef*pz_lo[k] - wm3 * wn_window[P,N,M]
-			    coef[P,N,P] = -xz_coef*px_hi[i] + 2*w3a*py[j] - xz_coef*pz_hi[k] - wm3 * wn_window[P,N,P]
-			    coef[M,M,N] = -xy_coef*px_lo[i] - xy_coef*py_lo[j] + 2*w3a*pz[k] - wm3 * wn_window[M,M,N]
-			    coef[M,P,N] = -xy_coef*px_lo[i] - xy_coef*py_hi[j] + 2*w3a*pz[k] - wm3 * wn_window[M,P,N]
-			    coef[P,M,N] = -xy_coef*px_hi[i] - xy_coef*py_lo[j] + 2*w3a*pz[k] - wm3 * wn_window[P,M,N]
-			    coef[P,P,N] = -xy_coef*px_hi[i] - xy_coef*py_hi[j] + 2*w3a*pz[k] - wm3 * wn_window[P,P,N]
-			    coef[M,M,M] = -2*w3a*(px_lo[i] + py_lo[j] + pz_lo[k]) - wm4 * wn_window[M,M,M]
-			    coef[M,M,P] = -2*w3a*(px_lo[i] + py_lo[j] + pz_hi[k]) - wm4 * wn_window[M,M,P]
-			    coef[M,P,M] = -2*w3a*(px_lo[i] + py_hi[j] + pz_lo[k]) - wm4 * wn_window[M,P,M]
-			    coef[M,P,P] = -2*w3a*(px_lo[i] + py_hi[j] + pz_hi[k]) - wm4 * wn_window[M,P,P]
-			    coef[P,M,M] = -2*w3a*(px_hi[i] + py_lo[j] + pz_lo[k]) - wm4 * wn_window[P,M,M]
-			    coef[P,M,P] = -2*w3a*(px_hi[i] + py_lo[j] + pz_hi[k]) - wm4 * wn_window[P,M,P]
-			    coef[P,P,M] = -2*w3a*(px_hi[i] + py_hi[j] + pz_lo[k]) - wm4 * wn_window[P,P,M]
-			    coef[P,P,P] = -2*w3a*(px_hi[i] + py_hi[j] + pz_hi[k]) - wm4 * wn_window[P,P,P]
+			    coef[N,M,M] = w3a*px[i] + dyzLL - wm3 * wn_window[N,M,M]
+			    coef[N,M,P] = w3a*px[i] + dyzLH - wm3 * wn_window[N,M,P]
+			    coef[N,P,M] = w3a*px[i] + dyzHL - wm3 * wn_window[N,P,M]
+			    coef[N,P,P] = w3a*px[i] + dyzHH - wm3 * wn_window[N,P,P]
+			    coef[M,N,M] = -xz_coef*px_lo[i] + eyzL - wm3 * wn_window[M,N,M]
+			    coef[M,N,P] = -xz_coef*px_lo[i] + eyzH - wm3 * wn_window[M,N,P]
+			    coef[P,N,M] = -xz_coef*px_hi[i] + eyzL - wm3 * wn_window[P,N,M]
+			    coef[P,N,P] = -xz_coef*px_hi[i] + eyzH - wm3 * wn_window[P,N,P]
+			    coef[M,M,N] = -xy_coef*px_lo[i] + fyzL - wm3 * wn_window[M,M,N]
+			    coef[M,P,N] = -xy_coef*px_lo[i] + fyzH - wm3 * wn_window[M,P,N]
+			    coef[P,M,N] = -xy_coef*px_hi[i] + fyzL - wm3 * wn_window[P,M,N]
+			    coef[P,P,N] = -xy_coef*px_hi[i] + fyzH - wm3 * wn_window[P,P,N]
+			    coef[M,M,M] = -w3a*(px_lo[i] + gyzLL) - wm4 * wn_window[M,M,M]
+			    coef[M,M,P] = -w3a*(px_lo[i] + gyzLH) - wm4 * wn_window[M,M,P]
+			    coef[M,P,M] = -w3a*(px_lo[i] + gyzHL) - wm4 * wn_window[M,P,M]
+			    coef[M,P,P] = -w3a*(px_lo[i] + gyzHH) - wm4 * wn_window[M,P,P]
+			    coef[P,M,M] = -w3a*(px_hi[i] + gyzLL) - wm4 * wn_window[P,M,M]
+			    coef[P,M,P] = -w3a*(px_hi[i] + gyzLH) - wm4 * wn_window[P,M,P]
+			    coef[P,P,M] = -w3a*(px_hi[i] + gyzHL) - wm4 * wn_window[P,P,M]
+			    coef[P,P,P] = -w3a*(px_hi[i] + gyzHH) - wm4 * wn_window[P,P,P]
 			    coef[N,N,N] = -cx*px[i] - cy*py[j] - cz*pz[k] + cNNN*wn_window[N,N,N]
                 
-                y[i,j,k] = sum( coef[2+xoff,2+yoff,2+zoff] .* x_window[2+xoff,2+yoff,2+zoff] )
+                y[i,j,k] = sum( coef .* x_window )
     
             end
         end
     end
+
     return vec(y)
 end
 
