@@ -1,6 +1,7 @@
 #include "math.h"
 #include <thread>
 #include <vector>
+#include <complex>
 
 using namespace std;
 
@@ -16,18 +17,13 @@ enum Deriv_Mode {
     DERIV_MODE,
     NO_DERIV_MODE
 };
-
-enum Wavenum_Cmplx {
-    WN_IS_CMPLX,
-    WN_IS_REAL
-};
     
-template <class T,Mult_Mode m, Deriv_Mode d, Wavenum_Cmplx c>
-void do_Hmvp( const T * wnr, const T * wni, const T * h, const T * n, const T * npml, T * yr, T *yi, const T * xr, const T * xi, int zmin, int zmax);
+template <class T,Mult_Mode m, Deriv_Mode d>
+void do_Hmvp( const complex<T> * wn, const T * h, const int * n, const int * npml, complex<T> * y, const complex<T> * x, int zmin, int zmax);
 
 
-template <class T,Mult_Mode m, Deriv_Mode d, Wavenum_Cmplx c>
-void do_Hmvp_mt( const T * wnr, const T * wni, const T * h, const T * n, const T * npml, T * yr, T * yi, const T * xr, const T * xi, int n_threads){
+template <class T,Mult_Mode m, Deriv_Mode d>
+void do_Hmvp_mt( const complex<T> * wn, const T * h, const int * n, const int * npml, complex<T> * y, const complex<T> * x, int n_threads){
     vector<thread> th(n_threads);
     int zmin, zmax;    
     
@@ -39,13 +35,12 @@ void do_Hmvp_mt( const T * wnr, const T * wni, const T * h, const T * n, const T
             zmax = (i+1)*dz;
         else
             zmax = n[2];
-        th[i] = thread(do_Hmvp<T,m,d,c>,wnr,wni,h,n,npml,yr,yi,xr,xi,zmin,zmax);
+        th[i] = thread {do_Hmvp<T,m,d>,wn,h,n,npml,y,x,zmin,zmax};
     }
 
     for (auto &t : th) {
         t.join();
     }
-
-
     
 }
+

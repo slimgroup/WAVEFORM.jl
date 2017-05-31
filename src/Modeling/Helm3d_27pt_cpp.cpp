@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <complex.h>
 #include <math.h>
+#include <jlcxx.hpp>
 
 
 /*
@@ -163,44 +164,43 @@ struct pml_info {
    Neighbourhood functions
  */
 template <class T>
-inline void load_nbrhoodc( std::array<complex<T>,27> & x, const T * xr, const T * xi, int i, int j, int k, int nx, int ny, int nz, pml_info<T> p )
+inline void load_nbrhoodc( std::array<complex<T>,27> & x_window, const complex<T> * x, int i, int j, int k, int nx, int ny, int nz, pml_info<T> p )
 {
-    using C = complex<T>;
-    x[MMM] = MMM_BDRY(C( xr[ IDX1D3(i-1,j-1,k-1,nx,ny,nz) ], xi[ IDX1D3(i-1,j-1,k-1,nx,ny,nz) ] ));
-    x[NMM] = NMM_BDRY(C( xr[ IDX1D3(i  ,j-1,k-1,nx,ny,nz) ], xi[ IDX1D3(i  ,j-1,k-1,nx,ny,nz) ] ));
-    x[PMM] = PMM_BDRY(C( xr[ IDX1D3(i+1,j-1,k-1,nx,ny,nz) ], xi[ IDX1D3(i+1,j-1,k-1,nx,ny,nz) ] ));
+    x_window[MMM] = MMM_BDRY(x[ IDX1D3(i-1,j-1,k-1,nx,ny,nz) ]);
+    x_window[NMM] = NMM_BDRY(x[ IDX1D3(i  ,j-1,k-1,nx,ny,nz) ]);
+    x_window[PMM] = PMM_BDRY(x[ IDX1D3(i+1,j-1,k-1,nx,ny,nz) ]);
     
-    x[MNM] = MNM_BDRY(C( xr[ IDX1D3(i-1,j  ,k-1,nx,ny,nz) ], xi[ IDX1D3(i-1,j  ,k-1,nx,ny,nz) ] ));
-    x[NNM] = NNM_BDRY(C( xr[ IDX1D3(i  ,j  ,k-1,nx,ny,nz) ], xi[ IDX1D3(i  ,j  ,k-1,nx,ny,nz) ] ));
-    x[PNM] = PNM_BDRY(C( xr[ IDX1D3(i+1,j  ,k-1,nx,ny,nz) ], xi[ IDX1D3(i+1,j  ,k-1,nx,ny,nz) ] ));
+    x_window[MNM] = MNM_BDRY(x[ IDX1D3(i-1,j  ,k-1,nx,ny,nz) ]);
+    x_window[NNM] = NNM_BDRY(x[ IDX1D3(i  ,j  ,k-1,nx,ny,nz) ]);
+    x_window[PNM] = PNM_BDRY(x[ IDX1D3(i+1,j  ,k-1,nx,ny,nz) ]);
     
-    x[MPM] = MPM_BDRY(C( xr[ IDX1D3(i-1,j+1,k-1,nx,ny,nz) ], xi[ IDX1D3(i-1,j+1,k-1,nx,ny,nz) ] ));
-    x[NPM] = NPM_BDRY(C( xr[ IDX1D3(i  ,j+1,k-1,nx,ny,nz) ], xi[ IDX1D3(i  ,j+1,k-1,nx,ny,nz) ] ));
-    x[PPM] = PPM_BDRY(C( xr[ IDX1D3(i+1,j+1,k-1,nx,ny,nz) ], xi[ IDX1D3(i+1,j+1,k-1,nx,ny,nz) ] ));
+    x_window[MPM] = MPM_BDRY(x[ IDX1D3(i-1,j+1,k-1,nx,ny,nz) ]);
+    x_window[NPM] = NPM_BDRY(x[ IDX1D3(i  ,j+1,k-1,nx,ny,nz) ]);
+    x_window[PPM] = PPM_BDRY(x[ IDX1D3(i+1,j+1,k-1,nx,ny,nz) ]);
     
-    x[MMN] = MMN_BDRY(C( xr[ IDX1D3(i-1,j-1,k  ,nx,ny,nz) ], xi[ IDX1D3(i-1,j-1,k  ,nx,ny,nz) ] ));
-    x[NMN] = NMN_BDRY(C( xr[ IDX1D3(i  ,j-1,k  ,nx,ny,nz) ], xi[ IDX1D3(i  ,j-1,k  ,nx,ny,nz) ] ));
-    x[PMN] = PMN_BDRY(C( xr[ IDX1D3(i+1,j-1,k  ,nx,ny,nz) ], xi[ IDX1D3(i+1,j-1,k  ,nx,ny,nz) ] ));
+    x_window[MMN] = MMN_BDRY(x[ IDX1D3(i-1,j-1,k  ,nx,ny,nz) ]);
+    x_window[NMN] = NMN_BDRY(x[ IDX1D3(i  ,j-1,k  ,nx,ny,nz) ]);
+    x_window[PMN] = PMN_BDRY(x[ IDX1D3(i+1,j-1,k  ,nx,ny,nz) ]);
     
-    x[MNN] = MNN_BDRY(C( xr[ IDX1D3(i-1,j  ,k  ,nx,ny,nz) ], xi[ IDX1D3(i-1,j  ,k  ,nx,ny,nz) ] ));
-    x[NNN] =          C( xr[ IDX1D3(i  ,j  ,k  ,nx,ny,nz) ], xi[ IDX1D3(i  ,j  ,k  ,nx,ny,nz) ] );
-    x[PNN] = PNN_BDRY(C( xr[ IDX1D3(i+1,j  ,k  ,nx,ny,nz) ], xi[ IDX1D3(i+1,j  ,k  ,nx,ny,nz) ] ));
+    x_window[MNN] = MNN_BDRY(x[ IDX1D3(i-1,j  ,k  ,nx,ny,nz) ]);
+    x_window[NNN] =          x[ IDX1D3(i  ,j  ,k  ,nx,ny,nz) ];
+    x_window[PNN] = PNN_BDRY(x[ IDX1D3(i+1,j  ,k  ,nx,ny,nz) ]);
     
-    x[MPN] = MPN_BDRY(C( xr[ IDX1D3(i-1,j+1,k  ,nx,ny,nz) ], xi[ IDX1D3(i-1,j+1,k  ,nx,ny,nz) ] ));
-    x[NPN] = NPN_BDRY(C( xr[ IDX1D3(i  ,j+1,k  ,nx,ny,nz) ], xi[ IDX1D3(i  ,j+1,k  ,nx,ny,nz) ] ));
-    x[PPN] = PPN_BDRY(C( xr[ IDX1D3(i+1,j+1,k  ,nx,ny,nz) ], xi[ IDX1D3(i+1,j+1,k  ,nx,ny,nz) ] ));
+    x_window[MPN] = MPN_BDRY(x[ IDX1D3(i-1,j+1,k  ,nx,ny,nz) ]);
+    x_window[NPN] = NPN_BDRY(x[ IDX1D3(i  ,j+1,k  ,nx,ny,nz) ]);
+    x_window[PPN] = PPN_BDRY(x[ IDX1D3(i+1,j+1,k  ,nx,ny,nz) ]);
     
-    x[MMP] = MMP_BDRY(C( xr[ IDX1D3(i-1,j-1,k+1,nx,ny,nz) ], xi[ IDX1D3(i-1,j-1,k+1,nx,ny,nz) ] ));
-    x[NMP] = NMP_BDRY(C( xr[ IDX1D3(i  ,j-1,k+1,nx,ny,nz) ], xi[ IDX1D3(i  ,j-1,k+1,nx,ny,nz) ] ));
-    x[PMP] = PMP_BDRY(C( xr[ IDX1D3(i+1,j-1,k+1,nx,ny,nz) ], xi[ IDX1D3(i+1,j-1,k+1,nx,ny,nz) ] ));
+    x_window[MMP] = MMP_BDRY(x[ IDX1D3(i-1,j-1,k+1,nx,ny,nz) ]);
+    x_window[NMP] = NMP_BDRY(x[ IDX1D3(i  ,j-1,k+1,nx,ny,nz) ]);
+    x_window[PMP] = PMP_BDRY(x[ IDX1D3(i+1,j-1,k+1,nx,ny,nz) ]);
     
-    x[MNP] = MNP_BDRY(C( xr[ IDX1D3(i-1,j  ,k+1,nx,ny,nz) ], xi[ IDX1D3(i-1,j  ,k+1,nx,ny,nz) ] ));
-    x[NNP] = NNP_BDRY(C( xr[ IDX1D3(i  ,j  ,k+1,nx,ny,nz) ], xi[ IDX1D3(i  ,j  ,k+1,nx,ny,nz) ] ));
-    x[PNP] = PNP_BDRY(C( xr[ IDX1D3(i+1,j  ,k+1,nx,ny,nz) ], xi[ IDX1D3(i+1,j  ,k+1,nx,ny,nz) ] ));
+    x_window[MNP] = MNP_BDRY(x[ IDX1D3(i-1,j  ,k+1,nx,ny,nz) ]);
+    x_window[NNP] = NNP_BDRY(x[ IDX1D3(i  ,j  ,k+1,nx,ny,nz) ]);
+    x_window[PNP] = PNP_BDRY(x[ IDX1D3(i+1,j  ,k+1,nx,ny,nz) ]);
     
-    x[MPP] = MPP_BDRY(C( xr[ IDX1D3(i-1,j+1,k+1,nx,ny,nz) ], xi[ IDX1D3(i-1,j+1,k+1,nx,ny,nz) ] ));
-    x[NPP] = NPP_BDRY(C( xr[ IDX1D3(i  ,j+1,k+1,nx,ny,nz) ], xi[ IDX1D3(i  ,j+1,k+1,nx,ny,nz) ] ));
-    x[PPP] = PPP_BDRY(C( xr[ IDX1D3(i+1,j+1,k+1,nx,ny,nz) ], xi[ IDX1D3(i+1,j+1,k+1,nx,ny,nz) ] ));
+    x_window[MPP] = MPP_BDRY(x[ IDX1D3(i-1,j+1,k+1,nx,ny,nz) ]);
+    x_window[NPP] = NPP_BDRY(x[ IDX1D3(i  ,j+1,k+1,nx,ny,nz) ]);
+    x_window[PPP] = PPP_BDRY(x[ IDX1D3(i+1,j+1,k+1,nx,ny,nz) ]);
 }
 
 template <class T>
@@ -460,8 +460,8 @@ inline void compute_coefs(Cbuf_3d<T> & coef, const Cbuf_3d<T> wn_window, const c
 }
 
 
-template <class T,Mult_Mode m, Deriv_Mode d, Wavenum_Cmplx c>
-void do_Hmvp( const T * wnr, const T * wni, const T * h, const T * n, const T * npml, T * yr, T *yi, const T * xr, const T * xi, int zmin, int zmax) {
+template <class T,Mult_Mode m, Deriv_Mode d>
+void do_Hmvp( const complex<T> * wn, const T * h, const int * n, const int * npml, complex<T> * y, const complex<T> * x, int zmin, int zmax) {
     using PMLlo = pml_func<T,pml_t::LOWER>;    
     using PMLhi = pml_func<T,pml_t::UPPER>;
     // Counter/index variables
@@ -469,9 +469,9 @@ void do_Hmvp( const T * wnr, const T * wni, const T * h, const T * n, const T * 
     
     int nx = (int)n[0]; int ny = (int)n[1]; int nz = (int)n[2];
     
-    int npmlx_lo = (int)npml[0]; int npmlx_hi = (int)npml[1]; 
-    int npmly_lo = (int)npml[2]; int npmly_hi = (int)npml[3]; 
-    int npmlz_lo = (int)npml[4]; int npmlz_hi = (int)npml[5];    
+    int npmlx_lo = npml[0]; int npmlx_hi = npml[1]; 
+    int npmly_lo = npml[2]; int npmly_hi = npml[3]; 
+    int npmlz_lo = npml[4]; int npmlz_hi = npml[5];    
 
     PMLlo pzlo = PMLlo(nz,npmlz_hi,npmlz_lo);
     PMLhi pzhi = PMLhi(nz,npmlz_hi,npmlz_lo);
@@ -502,24 +502,25 @@ void do_Hmvp( const T * wnr, const T * wni, const T * h, const T * n, const T * 
                  pxlo(i,p.pxlo_buf); pxhi(i,p.pxhi_buf);
                  for(t=0;t<3;t++){ p.px_buf[t] = p.pxlo_buf[t] + p.pxhi_buf[t]; }
                  p.x_hasL = i>0; p.x_hasR = i<nx-1;
+                 
                  //Load wavenumber window
-                 if(c==WN_IS_REAL)
-                     load_nbrhoodr( wn_window, wnr, i,j,k,nx,ny,nz,p );
-                 else
-                     load_nbrhoodc( wn_window, wnr,wni,i,j,k,nx,ny,nz,p );
+                 load_nbrhoodc( wn_window, wn,i,j,k,nx,ny,nz,p );
 
                  //Compute coefficients                 
                  compute_coefs<T,m,d>(coef,wn_window,consts,p);
+                 
                  //Load wavefield window
-                 load_nbrhoodc(x_window,xr,xi,i,j,k,nx,ny,nz,p);
+                 load_nbrhoodc(x_window,x,i,j,k,nx,ny,nz,p);
                
                  y_out = 0.0+0.0*1i;
                  kout = IDX1D3(i,j,k,nx,ny,nz);
                  for(t=0;t<27; t++){ y_out += coef[t]*x_window[t]; }
-                 yr[kout] = real(y_out);
-                 yi[kout] = imag(y_out);                 
+                 y[kout] = y_out;
             }
         }
     }
 
 }
+
+template void do_Hmvp_mt<double,FORW_MULT,NO_DERIV_MODE>(const complex<double> * wn, const double * h, const int * n, const int * npml, complex<double> * y, const complex<double> * x, int n_threads);
+

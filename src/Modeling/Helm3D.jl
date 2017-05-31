@@ -1,6 +1,4 @@
 
-using ParallelAccelerator
-
 function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3})
 """
    helm3d_operto_mvp(wn,h,nt,npml,x,y,forw_mode,deriv_mode)
@@ -30,13 +28,13 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
     pz = pz_lo+pz_hi
     
     # Weights
-    w1  = 1.8395262e-5
-    w2  = 0.29669233333333334
-    w3  = 0.02747615
-    wm1 = 0.49649658
-    wm2 = 0.07516874999999999
-    wm3 = 0.004373916666666667
-    wm4 = 5.690375e-7
+    const w1  = 1.8395262e-5
+    const w2  = 0.29669233333333334
+    const w3  = 0.02747615
+    const wm1 = 0.49649658
+    const wm2 = 0.07516874999999999
+    const wm3 = 0.004373916666666667
+    const wm4 = 5.690375e-7
     w3a = (2*0.041214225/hxyz)::F
 
     cx = - (w1/hx + w2/hx + w2/hxz + w2/hxy + 4*w3a)
@@ -84,18 +82,18 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
             
             for i = 1:nx
                 # Load wn_window + x_window             
-                 for kk=1:3
+                for kk=1:3
                     load_z = k+kk-2 > 0 && k+kk-2<=nz;
                     for jj=1:3
                         load_y = j+jj-2 > 0 && j+jj-2<=ny;
                         for ii=1:3
                             load_x = i+ii-2 > 0 && i+ii-2<=nx;
                             if load_x & load_y & load_z
-                                x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
-                                wn_window[ii,jj,kk] = wn[i+ii-2,j+jj-2,k+kk-2]                                
+                                @inbounds x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
+                                @inbounds wn_window[ii,jj,kk] = wn[i+ii-2,j+jj-2,k+kk-2]                                
                             else
-                                x_window[ii,jj,kk] = zero_x
-                                wn_window[ii,jj,kk] = zero_w
+                                @inbounds x_window[ii,jj,kk] = zero_x
+                                @inbounds wn_window[ii,jj,kk] = zero_w
                             end                            
                         end
                     end
@@ -130,14 +128,24 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
 			    coef[P,P,P] = -w3a*(px_hi[i] + gyzHH) - wm4 * wn_window[P,P,P]
 			    coef[N,N,N] = -cx*px[i] - cy*py[j] - cz*pz[k] + cNNN*wn_window[N,N,N]
                 
-                y[i,j,k] = sum( coef .* x_window )
-    
+                t = complex(0.0,0.0);
+                for kk=1:3
+                    for jj=1:3
+                        for ii=1:3
+                           @inbounds t += coef[ii,jj,kk]*x_window[ii,jj,kk];
+                        end
+                    end
+                end
+                y[i,j,k] = t;    
             end
         end
     end
 
     return vec(y)
 end
+
+
+
 
 function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2})
 """

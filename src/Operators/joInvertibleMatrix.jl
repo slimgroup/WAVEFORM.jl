@@ -15,6 +15,6 @@ function joInvertibleMatrix{F<:Number}(A::AbstractMatrix{F};DDT::DataType=F,RDT:
                                v->A'*v,
                                forw_div,
                                adj_div,
-                               DDT,RDT,name="joInvertibleMatrix")
+                               DDT,RDT,name="joInvertibleMatrix",fMVok=true,iMVok=true)
 end
 

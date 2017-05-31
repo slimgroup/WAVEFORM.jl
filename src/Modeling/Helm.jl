@@ -63,16 +63,16 @@ function discrete_helmholtz{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},m
         elseif opts.pde_scheme==helm2d_std7
             (H,dH,ddH) = helm2d_std7(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
         end
-        opH = joInvertibleMatrix(H)
+        opH = joInvertibleMatrix(H)        
     end
     T = u-> joLinearFunctionFwdT( prod(nt_pml),prod(nt_pml),
                                   dm->dH*(dm.*u),
-                                  z->conj(u).*(dH'*z),Complex{F})
+                                  z->conj(u).*(dH'*z),Complex{F},fMVok=true)
     T_forw = (u,dm)->dH*(dm.*u)
     T_adj = (u,z)->conj(u).*(dH'*z)
     DTadj = (u,dm,du)->joLinearFunctionFwdT(prod(nt_pml),prod(nt_pml),
                                             z->conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z),
-                                            @joNF,Complex{F})
+                                            @joNF,Complex{F},fMVok=true)
     comp_grid = ComputationalGrid{I,F}(phys_to_comp,comp_to_phys,vec(ot_pml),vec(dt),vec(nt_pml))
     return (opH,comp_grid,T_forw,T_adj,DTadj)
 end
