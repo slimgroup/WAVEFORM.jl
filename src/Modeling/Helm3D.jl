@@ -1,4 +1,7 @@
 
+
+
+
 function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3})
 """
    helm3d_operto_mvp(wn,h,nt,npml,x,y,forw_mode,deriv_mode)
@@ -49,8 +52,8 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
     coef = zeros(Complex{F},3,3,3)
     x_window = zeros(Complex{F},3,3,3)
     y = zeros(Complex{F},nx,ny,nz)
-    zero_x = complex(0,0)
-    zero_w = convert(F,0)
+    zero_x = complex(0.0,0.0)
+    zero_w = zero(eltype(wn))
     
     for k = 1:nz
         cxz = xz_coef*pz[k]
@@ -90,13 +93,13 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
                             load_x = i+ii-2 > 0 && i+ii-2<=nx;
                             if load_x & load_y & load_z
                                 @inbounds x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
-                                @inbounds wn_window[ii,jj,kk] = wn[i+ii-2,j+jj-2,k+kk-2]                                
+                                @inbounds wn_window[ii,jj,kk] = wn[i+ii-2,j+jj-2,k+kk-2]
                             else
                                 @inbounds x_window[ii,jj,kk] = zero_x
                                 @inbounds wn_window[ii,jj,kk] = zero_w
                             end                            
                         end
-                    end
+                    end                    
                 end                                               
                 
 			    coef[M,N,N] = cx*px_lo[i] + c1 - wm2 * wn_window[M,N,N]			
@@ -126,7 +129,7 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
 			    coef[P,M,P] = -w3a*(px_hi[i] + gyzLH) - wm4 * wn_window[P,M,P]
 			    coef[P,P,M] = -w3a*(px_hi[i] + gyzHL) - wm4 * wn_window[P,P,M]
 			    coef[P,P,P] = -w3a*(px_hi[i] + gyzHH) - wm4 * wn_window[P,P,P]
-			    coef[N,N,N] = -cx*px[i] - cy*py[j] - cz*pz[k] + cNNN*wn_window[N,N,N]
+                coef[N,N,N] = -cx*px[i] - cy*py[j] - cz*pz[k] + cNNN*wn_window[N,N,N]
                 
                 t = complex(0.0,0.0);
                 for kk=1:3

@@ -1,5 +1,4 @@
-function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6, output_freq=0)
-    T = eltype(A)
+function FGMRES{T<:Number}(A,b::AbstractVector{T},x0::AbstractVector{T}; m::Integer=10, maxiter::Integer=Inf, precond=nothing, tol::AbstractFloat=1e-6, outputfreq::Integer=0)
     n = size(A,2)
     
     size(A,1)==size(A,2) || throw(ArgumentError("A must be square"))
@@ -29,13 +28,18 @@ function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6, output_fre
     res = Array{Float64,1}()
     push!(res,1.0)
     it_counter = 1
+
+    if prec_dirac
+        Z = zeros(T,n,m+1)
+    else
+        Z = zeros(T,n,m+1)
+        V = zeros(T,n,m+1)
+    end
+    
     while hst[end] > tol && div(it_counter,m)<maxiter
-       
-        if prec_dirac
-            Z = zeros(T,n,m+1)
-        else
-            Z = zeros(T,n,m+1)
-            V = zeros(T,n,m+1)
+        Z = 0*Z;
+        if !prec_dirac
+            V = 0*V;
         end
         H = zeros(T,m+1,m)
         y = zeros(T,m)
@@ -78,7 +82,7 @@ function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6, output_fre
         end
         x = x + Z[:,1:j-1]*y[1:j-1]
         r = b - A*x
-        if output_freq > 0 && mod(div(it_counter,m),output_freq)==0
+        if outputfreq > 0 && mod(div(it_counter,m),outputfreq)==0
             @printf("it %3d res %3.3e\n",div(it_counter,m), norm(r)/normr0)
         end
         push!(res,norm(r))
@@ -86,5 +90,5 @@ function FGMRES(A,b,x0; m=10, maxiter=Inf, precond=nothing, tol=1e-6, output_fre
             break
         end
     end
-    return x
+    return (x,res)
 end
