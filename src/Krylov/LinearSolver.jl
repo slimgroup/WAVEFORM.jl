@@ -1,6 +1,8 @@
 export linearsolve, LinSolver, Precond, LinSolveOpts
 
-const LinSolver = Set([:fgmres])
+using JOLI
+
+const LinSolver = Set([:fgmres,:lufact])
 const Precond = Set([:mlgmres,:identity])
 
 type LinSolveOpts
@@ -10,10 +12,15 @@ type LinSolveOpts
     solver::Symbol
     precond::Union{Symbol,Function,LinSolveOpts,joAbstractOperator}
     outputfreq::Int64
-    function LinSolveOpts(;tol::Float64=1e-6,maxit::Int64=10000,maxinnerit::Int64=20,solver::Symbol=:fgmres,precond::Union{Symbol,Function}=:identity,outputfreq::Int64=0)
-        solver in LinSolver || throw(ArgumentError("Invalid solver $solver"))
+    function LinSolveOpts(;tol::Float64=1e-6,
+                          maxit::Int64=10000,
+                          maxinnerit::Int64=20,
+                          solver::Symbol=:fgmres,
+                          precond::Union{Symbol,Function}=:identity,
+                          outputfreq::Int64=0)
+        solver in LinSolver || throw(ArgumentError("Invalid solver $(solver), valid options are $(LinSolver)"))
         if typeof(precond)==Symbol
-            precond in Precond || throw(ArgumentError("Invalid preconditioner: $precond"))
+            precond in Precond || throw(ArgumentError("Invalid preconditioner: $(precond)"))
         end
         new(tol,maxit,maxinnerit,solver,precond,outputfreq)
     end
@@ -21,14 +28,13 @@ end
 
 # Generic linear solution interface
 #
-function linearsolve(op,b,x0,forw_mode::Bool,lsopts::LinSolveOpts)
+function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
     if length(x0)==0
         x0 = zeros(b)
     end
     size(op,1)==size(op,2) || throw(ArgumentError("A must be square"))
     size(b,1)==size(op,1) || throw(ArgumentError("right hand side dimension mismatch"))
     size(x0,1)==size(op,1) || throw(ArgumentError("x0 dimension mismatch"))
-    lsopts = deepcopy(lsopts)
     if forw_mode
         A = op
     else
@@ -58,6 +64,7 @@ function linearsolve(op,b,x0,forw_mode::Bool,lsopts::LinSolveOpts)
 
     if lsopts.solver==:fgmres
         (y,res) = FGMRES(A,b,x0,m=lsopts.maxinnerit,maxiter=lsopts.maxit,tol=lsopts.tol,precond=P,outputfreq=lsopts.outputfreq)
+        return y
     else
         throw(ArgumentError("Unrecognized solver $lsopts.solver"))
     end

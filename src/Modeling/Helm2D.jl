@@ -2,7 +2,7 @@
 # Curt Da Silva, 2016
 #
 
-export helm2d_7pt, helm2d_chen2013
+export helm2d_7pt, helm2d_chen2013, param_to_wavenum
 
 function helm2d_7pt(n,d,npml,freq,v,f0,unit::String)
 # Standard 7pt discretization of

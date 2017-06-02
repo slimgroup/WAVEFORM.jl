@@ -29,8 +29,10 @@ type PDEopts{IntType<:Integer,FloatType<:AbstractFloat}
     comp_d::AbstractArray{FloatType,1}
     comp_o::AbstractArray{FloatType,1}
     cut_pml::Bool
+    implicit_matrix::Bool
     npml::AbstractArray{IntType,2}
     misfit::Function
+    lsopts::LinSolveOpts
 end
 
 
