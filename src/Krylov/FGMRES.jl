@@ -2,7 +2,7 @@ function FGMRES{T<:Number}(A,
                            b::AbstractVector{T},
                            x0::AbstractVector{T};
                            m::Integer=10,
-                           maxiter::Integer=Inf,
+                           maxiter=Inf,
                            precond=nothing,
                            tol::AbstractFloat=1e-6,
                            outputfreq::Integer=0)
@@ -25,8 +25,11 @@ function FGMRES{T<:Number}(A,
     if precond==nothing
         P = x->x
         prec_dirac = true
-    else
-        P = x->P*x
+    elseif typeof(precond)==Function
+        P = precond
+        prec_dirac = false
+    elseif typeof(precond)<:joAbstractOperator
+        P = x->precond*x
         prec_dirac = false
     end
     

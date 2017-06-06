@@ -1,4 +1,4 @@
-export linearsolve, LinSolver, Precond, LinSolveOpts
+export linearsolve, LinSolver, Precond, LinSolveOpts, solvesystem
 
 using JOLI
 
@@ -33,7 +33,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
         x0 = zeros(b)
     end
     size(op,1)==size(op,2) || throw(ArgumentError("A must be square"))
-    size(b,1)==size(op,1) || throw(ArgumentError("right hand side dimension mismatch"))
+    size(b,1)==size(op,1) || throw(ArgumentError("b has $(size(b,1)) elements, op is $(size(op,1)) x $(size(op,2))"))
     size(x0,1)==size(op,1) || throw(ArgumentError("x0 dimension mismatch"))
     if forw_mode
         A = op
@@ -52,7 +52,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
         if lsopts.precond==:identity
             P = nothing
         else
-            throw(ArgumentError("Unrecognized preconditioner $lsopts.precond"))
+            throw(ArgumentError("Unrecognized preconditioner $(lsopts.precond)"))
         end
     elseif typeof(lsopts.precond)==joAbstractOperator
         if forw_mode
@@ -60,12 +60,18 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
         else
             P = x->lsopts.precond'*x
         end
-    end
+    else
+        P = nothing
+    end 
 
     if lsopts.solver==:fgmres
         (y,res) = FGMRES(A,b,x0,m=lsopts.maxinnerit,maxiter=lsopts.maxit,tol=lsopts.tol,precond=P,outputfreq=lsopts.outputfreq)
         return y
     else
-        throw(ArgumentError("Unrecognized solver $lsopts.solver"))
+        throw(ArgumentError("Unrecognized solver $(lsopts.solver)"))
     end
+end
+
+function solvesystem(H,lsopts::LinSolveOpts)
+    return (b,x,mode::Bool)->linearsolve(H,b,zeros(b),lsopts,forw_mode=mode)
 end

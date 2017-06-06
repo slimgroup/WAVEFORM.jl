@@ -9,13 +9,14 @@ type ComputationalGrid{I<:Integer,F<:AbstractFloat}
     comp_o::AbstractArray{F,1}
     comp_d::AbstractArray{F,1}
     comp_n::AbstractArray{I,1}
+    comp_n_nopml::AbstractArray{I,1}
 end
 
 function odn_to_grid{F<:AbstractFloat,I<:Integer}(comp_grid::ComputationalGrid{I,F})
     return odn_to_grid(comp_grid.comp_o,comp_grid.comp_d,comp_grid.comp_n)
 end
 
-function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},model::Model{I,F},freq::F,opts::PDEopts{I,F})
+function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F})
     
     ndims = (length(opts.comp_n)==2 || opts.comp_n[3]==1) ? 2 : 3
     lsopts = deepcopy(opts.lsopts)
@@ -59,15 +60,10 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
         comp_to_phys = Pext'
     end
     v_pml = reshape(Pext*vec(v),tuple(nt_pml...))
-    comp_grid = ComputationalGrid{I,F}(phys_to_comp,comp_to_phys,vec(ot_pml),vec(dt),vec(nt_pml))
+    comp_grid = ComputationalGrid{I,F}(phys_to_comp,comp_to_phys,vec(ot_pml),vec(dt),vec(nt_pml),vec(nt_nopml))
     N_system = prod(nt_pml)
 
     # Set up preconditioner
-    if lsopts.precond==:mlgmres
-        lsopts.precond = MLGMRES(v,comp_grid,model,freq,opts)
-    else
-        lsopts.precond = :identity
-    end
     
     if ndims==2
         if opts.pde_scheme==helm2d_chen9p
@@ -82,29 +78,35 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
         end
     elseif ndims==3
         if opts.pde_scheme==helm3d_operto27
+            (wn,dwn,ddwn) = param_to_wavenum(v_pml,freq,model.unit)
             if !opts.implicit_matrix
                 H = helm3d_operto_matrix(wn,dt,nt_pml,freq,npml)
             else
-                (wn,dwn,ddwn) = param_to_wavenum(v_pml,freq,model.unit)
                 H = (x;forw_mode=true)->helm3d_operto_mvp(wn,dt,nt_pml,freq,npml,reshape(x,nt_pml...))
             end
-        elseif opts.pde_sceme==helm3d_std9
+            
+        elseif opts.pde_scheme==helm3d_std9
             
         end
+        if lsopts.precond==:mlgmres
+            lsopts.precond = MLGMRES(H,v,comp_grid,model,freq,opts)
+        else
+            lsopts.precond = :identity
+        end
+
         if lsopts.solver==:lufact
             opH = joInvertibleMatrix(H)
         else
-            H = joLinearFunctionFwdCT(N_system,N_system,
-                                   x->Hmvp(x,forw_mode=true),
-                                   x->Hmvp(x,forw_mode=false),
-                                   Complex{F},Complex{F})
-            opH = joLinearFunctionCT(N_system,N_system,
-                                     x->Hmvp(x,forw_mode=true),
-                                     x->Hmvp(x,forw_mode=false),
-                                     x->linearsolve(H,x,[],lsopts,forw_mode=true),
-                                     x->linearsolve(H,x,[],lsopts,forw_mode=false),
-                                     Complex{F},Complex{F})
-                                      
+            if opts.implicit_matrix
+                opH = joLinearFunctionCT(N_system,N_system,
+                                         x->H(x,forw_mode=true),
+                                         x->H(x,forw_mode=false),
+                                         x->linearsolve(H,x,[],lsopts,forw_mode=true),
+                                         x->linearsolve(H,x,[],lsopts,forw_mode=false),
+                                         Complex{F},Complex{F})
+            else
+                opH = H
+            end
         end
     end
 
@@ -112,13 +114,11 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
     T = u-> joLinearFunctionFwdT( N_system,N_system,
                                   dm->dH*(dm.*u),
                                   z->conj(u).*(dH'*z),Complex{F},fMVok=true)
-    T_forw = (u,dm)->dH*(dm.*u)
-    T_adj = (u,z)->conj(u).*(dH'*z)
     DTadj = (u,dm,du)->joLinearFunctionFwdT(prod(nt_pml),prod(nt_pml),
                                             z->conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z),
                                             @joNF,Complex{F},fMVok=true)
 
-    return (opH,comp_grid,T_forw,T_adj,DTadj)
+    return (opH,comp_grid,T,DTadj)
 end
 
 
