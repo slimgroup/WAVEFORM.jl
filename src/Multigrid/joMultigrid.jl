@@ -9,12 +9,15 @@ function joMultigrid(Hs,S,R,P,C,coarse_solver;
         prepend!(coarse_solves,[solvesystem(Hs[nlevels],coarse_solver)])
         for i=nlevels-1:-1:1
             old_cs = coarse_solves[1]
+            Hc = Hs[i+1]
             Hf = Hs[i]
             Rf = R[i]
             Pf = P[i]
             Sf = S[i]
-            prepend!(coarse_solves,[(b,x,mode::Bool)->Waveform.mg_vcycle(Hf,b,x,Rf,Pf,old_cs,Sf,Sf,forw_mode=mode)])
-
+            coarse_solver = deepcopy(coarse_solver)
+            coarse_solver.precond = old_cs
+            CS = solvesystem(Hc,coarse_solver)
+            prepend!(coarse_solves,[(b,x,mode::Bool)->Waveform.mg_vcycle(Hf,b,x,Rf,Pf,CS,Sf,Sf,forw_mode=mode)])
         end
         solver = coarse_solves[1]
         return joLinearFunctionFwdCT(n,n,

@@ -65,7 +65,7 @@ function FGMRES{T<:Number}(A,
                 Z[:,k] = P(V[:,k])
             end
             w = A*Z[:,k]
-            
+
             if prec_dirac
                 H[1:k,k] = Z[:,1:k]'*w
                 w = w-Z[:,1:k]*H[1:k,k]
@@ -79,11 +79,11 @@ function FGMRES{T<:Number}(A,
             else
                 V[:,k+1] = w./H[k+1,k]
             end
+            
             y[1:k] = H[1:k+1,1:k]\(beta*ej[1:k+1])            
 
             push!(hst,norm(beta*ej[1:k+1]-H[1:k+1,1:k]*y[1:k])/normr0)
             j+=1
-
             
             if hst[end] < tol
                 break

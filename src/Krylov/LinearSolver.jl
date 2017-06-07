@@ -67,6 +67,8 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
     if lsopts.solver==:fgmres
         (y,res) = FGMRES(A,b,x0,m=lsopts.maxinnerit,maxiter=lsopts.maxit,tol=lsopts.tol,precond=P,outputfreq=lsopts.outputfreq)
         return y
+    elseif lsopts.solver==:lufact
+        y = A\b
     else
         throw(ArgumentError("Unrecognized solver $(lsopts.solver)"))
     end
