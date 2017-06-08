@@ -4,7 +4,7 @@ function joMultigrid(Hs,S,R,P,C,coarse_solver;
                      recursive_vcycle::Bool=false)
     n = size(Hs[1],1)
     nlevels = length(Hs)
-    if recursive_vcycle        
+    if recursive_vcycle
         coarse_solves = Array{Function,1}()
         prepend!(coarse_solves,[solvesystem(Hs[nlevels],coarse_solver)])
         for i=nlevels-1:-1:1
@@ -30,7 +30,7 @@ function joMultigrid(Hs,S,R,P,C,coarse_solver;
                              x->multigrid_multiply(Hs,S,R,P,C,coarse_solver,x,forw_mode=false),
                              eltype(Hs[1]),name="V cycle Multigrid preconditioner")
     end
-    
+
 end
 
 function multigrid_multiply(Hs,S,R,P,C,coarse_solver,b;forw_mode::Bool=true)
@@ -59,5 +59,5 @@ function multigrid_multiply(Hs,S,R,P,C,coarse_solver,b;forw_mode::Bool=true)
         x = S[i](b_lvl[i],x,forw_mode)
     end
     return x
-    
+
 end

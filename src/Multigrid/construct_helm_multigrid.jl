@@ -1,6 +1,11 @@
 export construct_helm_multigrid
 
-function construct_helm_multigrid{I<:Integer,F<:AbstractFloat}(H,v::AbstractArray{F,1},comp_grid::ComputationalGrid{I,F},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F},smoother::LinSolveOpts,coarse_solver::LinSolveOpts,nlevels::I; explicit_coarse_mat::Bool=false)
+function construct_helm_multigrid{I<:Integer,F<:AbstractFloat}(H,v::AbstractArray{F,1},
+        comp_grid::ComputationalGrid{I,F},
+        model::Model{I,F},freq::Union{F,Complex{F}},
+        opts::PDEopts{I,F},
+        smoother::LinSolveOpts,
+        coarse_solver::LinSolveOpts,nlevels::I; explicit_coarse_mat::Bool=false)
 
     coarse_factor = 2
     opts = deepcopy(opts)

@@ -7,7 +7,7 @@ function FGMRES{T<:Number}(A,
                            tol::AbstractFloat=1e-6,
                            outputfreq::Integer=0)
     n = size(A,2)
-    
+
     size(A,1)==size(A,2) || throw(ArgumentError("A must be square"))
     size(b,1)==n || throw(ArgumentError("A and b must have compatible dimensions"))
     size(b,2)==1 || throw(ArgumentError("b must be a vector"))
@@ -25,7 +25,7 @@ function FGMRES{T<:Number}(A,
     if precond==nothing
         P = x->x
         prec_dirac = true
-    elseif typeof(precond)==Function
+    elseif typeof(precond)<:Function
         P = precond
         prec_dirac = false
     elseif typeof(precond)<:joAbstractOperator
@@ -45,7 +45,7 @@ function FGMRES{T<:Number}(A,
         Z = zeros(T,n,m+1)
         V = zeros(T,n,m+1)
     end
-    
+
     while hst[end] > tol && div(it_counter,m)<maxiter
         Z = 0*Z;
         if !prec_dirac
@@ -79,12 +79,12 @@ function FGMRES{T<:Number}(A,
             else
                 V[:,k+1] = w./H[k+1,k]
             end
-            
-            y[1:k] = H[1:k+1,1:k]\(beta*ej[1:k+1])            
+
+            y[1:k] = H[1:k+1,1:k]\(beta*ej[1:k+1])
 
             push!(hst,norm(beta*ej[1:k+1]-H[1:k+1,1:k]*y[1:k])/normr0)
             j+=1
-            
+
             if hst[end] < tol
                 break
             end

@@ -40,15 +40,16 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
     else
         A = op'
     end
+    @show lsopts.precond
     if typeof(lsopts.precond)==LinSolveOpts
         prec_opts = lsopts.precond
-        
+
         if prec_opts.solver==:fgmres
             P = x->FGMRES(A,x,zeros(x),m=prec_opts.maxinnerit,maxit=prec_opts.maxit,tol=prec_opts.tol)
         end
-    elseif typeof(lsopts.precond)==Function        
-        P = x->lsopts.precond(x,forw_mode)
-    elseif typeof(lsopts.precond)==Symbol        
+    elseif typeof(lsopts.precond)<:Function
+        P = x->lsopts.precond(x,zeros(x),forw_mode)
+    elseif typeof(lsopts.precond)==Symbol
         if lsopts.precond==:identity
             P = nothing
         else
@@ -62,7 +63,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
         end
     else
         P = nothing
-    end 
+    end
 
     if lsopts.solver==:fgmres
         (y,res) = FGMRES(A,b,x0,m=lsopts.maxinnerit,maxiter=lsopts.maxit,tol=lsopts.tol,precond=P,outputfreq=lsopts.outputfreq)
@@ -75,5 +76,5 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
 end
 
 function solvesystem(H,lsopts::LinSolveOpts)
-    return (b,x,mode::Bool)->linearsolve(H,b,zeros(b),lsopts,forw_mode=mode)
+    return (b,x,mode::Bool)->linearsolve(H,b,zeros(b),lsopts,forw_mode=mode)  
 end

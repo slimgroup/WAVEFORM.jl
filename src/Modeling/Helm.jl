@@ -17,7 +17,7 @@ function odn_to_grid{F<:AbstractFloat,I<:Integer}(comp_grid::ComputationalGrid{I
 end
 
 function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F})
-    
+
     ndims = (length(opts.comp_n)==2 || opts.comp_n[3]==1) ? 2 : 3
     lsopts = deepcopy(opts.lsopts)
     if ndims==2
@@ -43,11 +43,11 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
     # in 2D
     # [ #pml pts lower z  | # pml pts lower x  | 0 ]
     # [ #pml pts upper z  | # pml pts upper x  | 0 ]
-    
+
     # in 3D
     # [ #pml pts lower x  | # pml pts lower y  | # pml pts lower z ]
     # [ #pml pts upper x  | # pml pts upper y  | # pml pts upper z ]
-    
+
     nt_nopml = opts.comp_n
     nt_pml = nt_nopml + sum(npml,1)'
     nt_pml = vec(nt_pml)
@@ -64,7 +64,7 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
     N_system = prod(nt_pml)
 
     # Set up preconditioner
-    
+
     if ndims==2
         if opts.pde_scheme==helm2d_chen9p
             (H,dH,ddH) = helm2d_chen2013(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
@@ -82,11 +82,12 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
             if !opts.implicit_matrix
                 H = helm3d_operto_matrix(wn,dt,nt_pml,freq,npml)
             else
-                H = (x;forw_mode=true)->helm3d_operto_mvp(wn,dt,nt_pml,freq,npml,reshape(x,nt_pml...))
+                Hmvp = (x;forw_mode=true)->helm3d_operto_mvp(wn,dt,nt_pml,freq,npml,reshape(x,nt_pml...))
+                H = joLinearFunctionFwdCT(N_system,N_system,x->Hmvp(x,forw_mode=true),x->Hmvp(x,forw_mode=false),Complex{F},Complex{F})
             end
-            
+
         elseif opts.pde_scheme==helm3d_std9
-            
+
         end
         if lsopts.precond==:mlgmres
             lsopts.precond = MLGMRES(H,v,comp_grid,model,freq,opts)
@@ -99,8 +100,8 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
         else
             if opts.implicit_matrix
                 opH = joLinearFunctionCT(N_system,N_system,
-                                         x->H(x,forw_mode=true),
-                                         x->H(x,forw_mode=false),
+                                         x->Hmvp(x,forw_mode=true),
+                                         x->Hmvp(x,forw_mode=false),
                                          x->linearsolve(H,x,[],lsopts,forw_mode=true),
                                          x->linearsolve(H,x,[],lsopts,forw_mode=false),
                                          Complex{F},Complex{F})
@@ -110,7 +111,7 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
         end
     end
 
-    
+
     T = u-> joLinearFunctionFwdT( N_system,N_system,
                                   dm->dH*(dm.*u),
                                   z->conj(u).*(dH'*z),Complex{F},fMVok=true)
@@ -140,5 +141,3 @@ function get_pad_ext_ops(nt_nopml,npml,ndims)
     end
     return (Pext,Ppad)
 end
-
-
