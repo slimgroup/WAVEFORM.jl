@@ -40,7 +40,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
     else
         A = op'
     end
-    @show lsopts.precond
+
     if typeof(lsopts.precond)==LinSolveOpts
         prec_opts = lsopts.precond
 
@@ -76,5 +76,5 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
 end
 
 function solvesystem(H,lsopts::LinSolveOpts)
-    return (b,x,mode::Bool)->linearsolve(H,b,zeros(b),lsopts,forw_mode=mode)  
+    return (b,x,mode::Bool)->linearsolve(H,b,x,lsopts,forw_mode=mode)  
 end
