@@ -1,15 +1,8 @@
-export MLGMRES
+function MLGMRES{I<:Integer,F<:AbstractFloat}(H::joAbstractOperator,v::AbstractArray{F,1},comp_grid::ComputationalGrid{I,F},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F}) 
 
-function MLGMRES{I<:Integer,F<:AbstractFloat}(H::joAbstractOperator,v::AbstractArray{F,1},comp_grid::ComputationalGrid{I,F},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F})
-    ks_outer = 3
-    ks_inner = 5
-    kc_outer = 3
-    kc_inner = 5
-    coarse_tol = 0.5
-    
-    nlevels = 3
-    smoother = LinSolveOpts(solver=:fgmres,precond=:identity,maxit=ks_outer,maxinnerit=ks_inner)
-    coarse_solver = LinSolveOpts(solver=:fgmres,precond=:identity,maxit=kc_outer,maxinnerit=kc_inner,tol=coarse_tol)
-    (Hs,S,R,P,C) = construct_helm_multigrid(H,v,comp_grid,model,freq,opts,smoother,coarse_solver,nlevels)
-    T = joMultigrid(Hs,S,R,P,C,smoother,coarse_solver,recursive_vcycle=true)    
+    smoother = Waveform.LinSolveOpts(solver=:fgmres,maxit=1,maxinnerit=5,precond=:identity);
+    coarse_solver = Waveform.LinSolveOpts(solver=:fgmres,maxit=1,maxinnerit=5,tol=0.5);
+    nlevels = 3;
+    (Hs,S,R,P,C) = Waveform.construct_helm_multigrid(H,v,comp_grid,model,freq,opts,smoother,coarse_solver,nlevels,explicit_coarse_mat=false);
+    M = Waveform.joMultigrid(Hs,S,R,P,C,coarse_solver,recursive_vcycle=true)
 end

@@ -50,8 +50,7 @@ function fine2coarse(n,d,d_sub...)
         f2c = joKron(interp_basis(linspace(0,1,n[2]),linspace(0,1,n_sub[2])),
                      interp_basis(linspace(0,1,n[1]),linspace(0,1,n_sub[1])))
         c2f = joKron(interp_basis(linspace(0,1,n_sub[2]),linspace(0,1,n[2])),
-                     interp_basis(linspace(0,1,n_sub[1]),linspace(0,1,n[1]))
-)
+                     interp_basis(linspace(0,1,n_sub[1]),linspace(0,1,n[1])))
     elseif ndims==3
         f2c = joKron(interp_basis(linspace(0,1,n[3]),linspace(0,1,n_sub[3])),
                      interp_basis(linspace(0,1,n[2]),linspace(0,1,n_sub[2])),
