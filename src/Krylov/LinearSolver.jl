@@ -55,7 +55,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
         else
             throw(ArgumentError("Unrecognized preconditioner $(lsopts.precond)"))
         end
-    elseif typeof(lsopts.precond)==joAbstractOperator
+    elseif typeof(lsopts.precond)<:joAbstractOperator
         if forw_mode
             P = x->lsopts.precond*x
         else

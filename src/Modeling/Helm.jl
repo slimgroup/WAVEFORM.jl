@@ -94,7 +94,6 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
         else
             lsopts.precond = :identity
         end
-
         if lsopts.solver==:lufact
             opH = joInvertibleMatrix(H)
         else
