@@ -5,7 +5,7 @@
 function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3};forw_mode::Bool=true,deriv_mode::Bool=false)
 """
    helm3d_operto_mvp(wn,h,nt,npml,x,y,forw_mode,deriv_mode)
-
+``````````
    Curt Da Silva, 2016
 """
     M,N,P = 1,2,3
@@ -24,10 +24,30 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
    
     # Create PML functions
     px_lo,px_hi = pml_func(nx,npxlo,npxhi)
+    if ~forw_mode
+        prepend!(px_lo,[px_lo[1]])
+        append!(px_lo,[px_lo[end]])
+        prepend!(px_hi,[px_hi[1]])
+        append!(px_hi,[px_hi[end]])
+    end
     px = px_lo+px_hi
     py_lo,py_hi = pml_func(ny,npylo,npyhi)
+    if ~forw_mode
+        prepend!(py_lo,[py_lo[1]])
+        append!(py_lo,[py_lo[end]])
+        prepend!(py_hi,[py_hi[1]])
+        append!(py_hi,[py_hi[end]])
+    end
+
     py = py_lo+py_hi
     pz_lo,pz_hi = pml_func(nz,npzlo,npzhi)
+    if ~forw_mode
+        prepend!(pz_lo,[pz_lo[1]])
+        append!(pz_lo,[pz_lo[end]])
+        prepend!(pz_hi,[pz_hi[1]])
+        append!(pz_hi,[pz_hi[end]])
+    end
+
     pz = pz_lo+pz_hi
     
     # Weights
@@ -130,8 +150,7 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
 			        coef[P,M,P] = is_deriv_mode*(-w3a*(px_hi[i] + gyzLH)) - wm4 * wn_window[P,M,P]
 			        coef[P,P,M] = is_deriv_mode*(-w3a*(px_hi[i] + gyzHL)) - wm4 * wn_window[P,P,M]
 			        coef[P,P,P] = is_deriv_mode*(-w3a*(px_hi[i] + gyzHH)) - wm4 * wn_window[P,P,P]
-                    coef[N,N,N] = is_deriv_mode*(-cx*px[i] - cy*py[j] - cz*pz[k]) + cNNN*wn_window[N,N,N]
-                    
+                    coef[N,N,N] = is_deriv_mode*(-cx*px[i] - cy*py[j] - cz*pz[k]) + cNNN*wn_window[N,N,N]                    
                     t = complex(0.0,0.0);
                     for kk=1:3
                         for jj=1:3
@@ -141,13 +160,77 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
                         end
                     end
                     y[i,j,k] = t;    
+                end
             end
+end
+else
+# (i+1,j+1,k+1) is the current index for the current point
+# with respect to the pml functions
+    for k=1:nz
+        kM,kN,kP = k,k+1,k+2
+        for j=1:ny
+             jM,jN,jP = j,j+1,j+2
+             for i=1:nx
+                 wNNN = wn[i,j,k]
+                 for kk=1:3
+                     load_z = k+kk-2 > 0 && k+kk-2<=nz;
+                     for jj=1:3
+                         load_y = j+jj-2 > 0 && j+jj-2<=ny;
+                         for ii=1:3
+                             load_x = i+ii-2 > 0 && i+ii-2<=nx;
+                             if load_x & load_y & load_z
+                                 @inbounds x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
+                             else
+                                 @inbounds x_window[ii,jj,kk] = zero_x
+                             end                            
+                         end
+                     end                    
+                 end
+                 iM,iN,iP = i,i+1,i+2
+                 coef[M,M,M] = -wm4*wNNN + is_deriv_mode*(-w3a*(px_hi[iM] + py_hi[jM] + pz_hi[kM]))
+                 coef[N,M,M] = -wm3*wNNN + is_deriv_mode*((-yz_coef) * (pz_hi[kM] + py_hi[jM]) + w3a*px[iN])        
+                 coef[P,M,M] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_lo[iP] + py_hi[jM] + pz_hi[kM]))
+                 coef[M,N,M] = -wm3*wNNN + is_deriv_mode*(-xz_coef * (px_hi[iM] + pz_hi[kM]) + w3a*py[jN])
+
+                 coef[N,N,M] = -wm2*wNNN + is_deriv_mode*(cz*pz_hi[kM] + yz_coef*py[jN] + xz_coef*px[iN])
+                 coef[P,N,M] = -wm3*wNNN + is_deriv_mode*(-xz_coef * (pz_hi[kM] + px_lo[iP]) + w3a*py[jN])
+                 coef[M,P,M] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_hi[iM] + py_lo[jP] + pz_hi[kM] ));		
+                 coef[N,P,M] = -wm3*wNNN + is_deriv_mode*(-yz_coef * (py_lo[jP] + pz_hi[kM]) + w3a*px[iN])
+                 coef[P,P,M] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_lo[iP] + py_lo[jP] + pz_hi[kM]))
+                 coef[M,M,N] = -wm3*wNNN + is_deriv_mode*(-xy_coef * (px_hi[iM] + py_hi[jM]) + w3a*pz[kN])
+                 coef[N,M,N] = -wm2*wNNN + is_deriv_mode*(cy*py_hi[jM] + yz_coef*pz[kN] + xy_coef*px[iN])
+                 coef[P,M,N] = -wm3*wNNN + is_deriv_mode*(-xy_coef * (px_lo[iP] + py_hi[jM]) + w3a*pz[kN]	)
+                 coef[M,N,N] = -wm2*wNNN + is_deriv_mode*(cx*px_hi[iM] + xz_coef*pz[kN] + xy_coef*py[jN])                
+                 coef[N,N,N] = cNNN*wNNN - is_deriv_mode*( cx*px[iN] + cy*py[jN] + cz*pz[kN])
+                 coef[P,N,N] = -wm2*wNNN + is_deriv_mode*(cx*px_lo[iP] + xz_coef*pz[kN] + xy_coef*py[jN])               
+               
+                 coef[M,P,N] = -wm3*wNNN + is_deriv_mode*(-xy_coef * (px_hi[iM] + py_lo[jP]) + w3a*pz[kN])
+                 coef[N,P,N] = -wm2*wNNN + is_deriv_mode*(cy*py_lo[jP] + yz_coef*pz[kN] + xy_coef*px[iN])
+                 coef[P,P,N] = -wm3*wNNN + is_deriv_mode*(-xy_coef * (px_lo[iP] + py_lo[jP]) + w3a*pz[kN])
+                 coef[M,M,P] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_hi[iM] + py_hi[jM] + pz_lo[kP] ))
+                 coef[N,M,P] = -wm3*wNNN + is_deriv_mode*(-yz_coef * (py_hi[jM] + pz_lo[kP]) + w3a*px[iN])
+                 coef[P,M,P] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_lo[iP] + py_hi[jM] + pz_lo[kP]))
+                 coef[M,N,P] = -wm3*wNNN + is_deriv_mode*(-xz_coef * (pz_lo[kP] + px_hi[iM]) + w3a*py[jN])
+                 coef[N,N,P] = -wm2*wNNN + is_deriv_mode*(cz*pz_lo[kP] + yz_coef*py[jN] + xz_coef*px[iN])
+                 coef[P,N,P] = -wm3*wNNN + is_deriv_mode*(-xz_coef * (pz_lo[kP] + px_lo[iP]) + w3a*py[jN])
+                 coef[M,P,P] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_hi[iM] + py_lo[jP] + pz_lo[kP]))
+                 coef[N,P,P] = -wm3*wNNN + is_deriv_mode*(-yz_coef * (pz_lo[kP] + py_lo[jP]) + w3a*px[iN])
+                 coef[P,P,P] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_lo[iP] + py_lo[jP] + pz_lo[kP]))                 
+                 
+                 t = complex(0.0,0.0);
+                 for kk=1:3
+                     for jj=1:3
+                         for ii=1:3
+                             @inbounds t += conj(coef[ii,jj,kk])*x_window[ii,jj,kk];
+                         end
+                     end
+                 end
+                 y[i,j,k] = t;    
+             end
         end
     end
-    else
-
-    end
-    return vec(y)
+end
+return vec(y)
 end
 
 
@@ -230,7 +313,7 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
 		        c3_hi = yz_coef*py[j] + cz*pz_hi[k]
                 
 			    coef[M,N,N,i,j,k] = cx*px_lo[i] + c1 - wm2 * wn_window[M,N,N]			
-			    coef[P,N,N,i,j,k] = cx*px_hi[i] + c1 - wm2 * wn_window[P,N,N]                
+			    coef[P,N,N,i,j,k] = cx*px_hi[i] + c1 - wm2 * wn_window[P,N,N]
 			    coef[N,M,N,i,j,k] = xy_coef*px[i] + c2_lo - wm2 * wn_window[N,M,N]
 			    coef[N,P,N,i,j,k] = xy_coef*px[i] + c2_hi - wm2 * wn_window[N,P,N]
 			    coef[N,N,M,i,j,k] = xz_coef*px[i] + c3_lo - wm2 * wn_window[N,N,M]
@@ -256,7 +339,8 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
 			    coef[P,M,P,i,j,k] = -2*w3a*(px_hi[i] + py_lo[j] + pz_hi[k]) - wm4 * wn_window[P,M,P]
 			    coef[P,P,M,i,j,k] = -2*w3a*(px_hi[i] + py_hi[j] + pz_lo[k]) - wm4 * wn_window[P,P,M]
 			    coef[P,P,P,i,j,k] = -2*w3a*(px_hi[i] + py_hi[j] + pz_hi[k]) - wm4 * wn_window[P,P,P]
-			    coef[N,N,N,i,j,k] = -cx*px[i] - cy*py[j] - cz*pz[k] + cNNN*wn_window[N,N,N]                   
+			    coef[N,N,N,i,j,k] = -cx*px[i] - cy*py[j] - cz*pz[k] + cNNN*wn_window[N,N,N]
+               
             end
         end
     end
@@ -904,3 +988,4 @@ function pml_func(nx::Int,np_lo::Int,np_hi::Int)
     return 2.0./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[1:nx] )), 2.0./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[3:nx+2] ))
 
 end
+

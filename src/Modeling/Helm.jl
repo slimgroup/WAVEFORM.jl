@@ -83,7 +83,7 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
                 H = helm3d_operto_matrix(wn,dt,nt_pml,freq,npml)
             else
                 Hmvp = (x;forw=true)->helm3d_operto_mvp(wn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw)
-                H = joLinearFunctionFwdCT(N_system,N_system,x->Hmvp(x,forw_mode=true),x->Hmvp(x,forw_mode=false),Complex{F},Complex{F})            
+                H = joLinearFunctionFwdCT(N_system,N_system,x->Hmvp(x,forw=true),x->Hmvp(x,forw=false),Complex{F},Complex{F})            
             end
             
         elseif opts.pde_scheme==helm3d_std9
