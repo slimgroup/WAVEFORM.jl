@@ -27,13 +27,13 @@
 #   n_coarse  - vector of coarse grid sizes
 
 function fine2coarse(n,d,d_sub...)
-    
+
     if length(d_sub)==1
         n_sub = d
         typeof(d_sub[1])==DataType || throw(ArgumentError("Third argument must be of type DataType"))
         T = d_sub[1]
     elseif length(d_sub)==2
-        n_sub = ceil(Int64,n.*d./d_sub[1])
+        n_sub = ceil.(Int64,n.*d./d_sub[1])
         typeof(d_sub[2])==DataType || throw(ArgumentError("Fourth argument must be of type DataType"))
         T = d_sub[2]
     else

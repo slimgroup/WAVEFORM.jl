@@ -20,15 +20,15 @@ end
 # Convert odn coordinates to their full grid coordinates
 function odn_to_grid{F<:AbstractFloat,I<:Integer}(o::AbstractArray{F,1},d::AbstractArray{F,1},n::AbstractArray{I,1})
     (length(o)==length(d) && length(o)==length(n)) || throw(Exception("o,d,n must have the same length"))
-    x = Array{FloatRange{Float64},1}(length(o))
-    for i in 1:length(o)      
+    x = Array{StepRangeLen{Float64},1}(length(o))
+    for i in 1:length(o)
         x[i] = o[i] .+ (0:(n[i]-1))*d[i]
     end
     return tuple(x...)
 end
 
 # Convert grid coordinates to odn coordinates
-function grid_to_odn{F<:AbstractFloat}(x::AbstractArray{FloatRange{F},1})
+function grid_to_odn{F<:AbstractFloat}(x::AbstractArray{StepRangeLen{F},1})
     o = Array{F,1}()
     d = Array{F,1}()
     n = Array{Int64,1}()
@@ -38,5 +38,4 @@ function grid_to_odn{F<:AbstractFloat}(x::AbstractArray{FloatRange{F},1})
         n[i] = length(x[i])
     end
     return (o,d,n)
-end    
-
+end

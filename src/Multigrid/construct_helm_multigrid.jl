@@ -22,9 +22,9 @@ function construct_helm_multigrid{I<:Integer,F<:AbstractFloat}(H,v::AbstractArra
         newopts = deepcopy(opts)
         newopts.lsopts.precond = :identity
         newopts.comp_d = coarse_factor^i*dt_fine
-        newopts.npml = div(pml_fine,coarse_factor^i)
+        newopts.npml = div.(pml_fine,coarse_factor^i)
         push!(S,solvesystem(H,smoother))
-        (to_coarse,to_fine,ncoarse) = fine2coarse(nt_nopml_fine,div(newopts.comp_d,coarse_factor),newopts.comp_d,eltype(v))
+        (to_coarse,to_fine,ncoarse) = fine2coarse(nt_nopml_fine,div.(newopts.comp_d,coarse_factor),newopts.comp_d,eltype(v))
         vcoarse = to_coarse*vec(v)
         newopts.comp_n = ncoarse
         if i==nlevels-1 && explicit_coarse_mat

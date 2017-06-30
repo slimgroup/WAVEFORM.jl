@@ -9,7 +9,7 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
    Curt Da Silva, 2016
 """
     M,N,P = 1,2,3
-    
+
     nx,ny,nz = n[1],n[2],n[3]
     hx,hy,hz = Δ[1]^2,Δ[2]^2,Δ[3]^2
     hyz  = hy + hz
@@ -17,11 +17,11 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
     hxz = hx + hz
     hxyz = hx + hy + hz
 
-    
-    npxlo,npxhi,npylo,npyhi,npzlo,npzhi = npml[1,1],npml[2,1],npml[1,2],npml[2,2],npml[1,3],npml[2,3]    
+
+    npxlo,npxhi,npylo,npyhi,npzlo,npzhi = npml[1,1],npml[2,1],npml[1,2],npml[2,2],npml[1,3],npml[2,3]
 
     y = zeros(Complex{F},tuple(n...))
-   
+
     # Create PML functions
     px_lo,px_hi = pml_func(nx,npxlo,npxhi)
     if ~forw_mode
@@ -49,7 +49,7 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
     end
 
     pz = pz_lo+pz_hi
-    
+
     # Weights
     const w1  = 1.8395262e-5
     const w2  = 0.29669233333333334
@@ -89,12 +89,12 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
 		        c2_hi = cy*py_hi[j] + cyz
 		        c3_lo = yz_coef*py[j] + cz*pz_lo[k]
 		        c3_hi = yz_coef*py[j] + cz*pz_hi[k]
-                
+
                 dyzLL = - yz_coef*py_lo[j] - yz_coef*pz_lo[k]
                 dyzLH = - yz_coef*py_lo[j] - yz_coef*pz_hi[k]
                 dyzHL = - yz_coef*py_hi[j] - yz_coef*pz_lo[k]
                 dyzHH = - yz_coef*py_hi[j] - yz_coef*pz_hi[k]
-                
+
                 eyzL = w3a*py[j] - xz_coef*pz_lo[k]
                 eyzH = w3a*py[j] - xz_coef*pz_hi[k]
                 fyzL = - xy_coef*py_lo[j] + w3a*pz[k]
@@ -103,9 +103,9 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
                 gyzLH = py_lo[j] + pz_hi[k]
                 gyzHL = py_hi[j] + pz_lo[k]
                 gyzHH = py_hi[j] + pz_hi[k]
-                
+
                 for i = 1:nx
-                    # Load wn_window + x_window             
+                    # Load wn_window + x_window
                     for kk=1:3
                         load_z = k+kk-2 > 0 && k+kk-2<=nz;
                         for jj=1:3
@@ -118,18 +118,18 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
                                 else
                                     @inbounds x_window[ii,jj,kk] = zero_x
                                     @inbounds wn_window[ii,jj,kk] = zero_w
-                                end                            
+                                end
                             end
-                        end                    
-                    end                                               
-                    
-			        coef[M,N,N] = is_deriv_mode*(cx*px_lo[i] + c1) - wm2 * wn_window[M,N,N]			
-			        coef[P,N,N] = is_deriv_mode*(cx*px_hi[i] + c1) - wm2 * wn_window[P,N,N]                
+                        end
+                    end
+
+			        coef[M,N,N] = is_deriv_mode*(cx*px_lo[i] + c1) - wm2 * wn_window[M,N,N]
+			        coef[P,N,N] = is_deriv_mode*(cx*px_hi[i] + c1) - wm2 * wn_window[P,N,N]
 			        coef[N,M,N] = is_deriv_mode*(xy_coef*px[i] + c2_lo) - wm2 * wn_window[N,M,N]
 			        coef[N,P,N] = is_deriv_mode*(xy_coef*px[i] + c2_hi) - wm2 * wn_window[N,P,N]
 			        coef[N,N,M] = is_deriv_mode*(xz_coef*px[i] + c3_lo) - wm2 * wn_window[N,N,M]
 			        coef[N,N,P] = is_deriv_mode*(xz_coef*px[i] + c3_hi) - wm2 * wn_window[N,N,P]
-                    
+
 			        coef[N,M,M] = is_deriv_mode*(w3a*px[i] + dyzLL) - wm3 * wn_window[N,M,M]
 			        coef[N,M,P] = is_deriv_mode*(w3a*px[i] + dyzLH) - wm3 * wn_window[N,M,P]
 			        coef[N,P,M] = is_deriv_mode*(w3a*px[i] + dyzHL) - wm3 * wn_window[N,P,M]
@@ -150,7 +150,7 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
 			        coef[P,M,P] = is_deriv_mode*(-w3a*(px_hi[i] + gyzLH)) - wm4 * wn_window[P,M,P]
 			        coef[P,P,M] = is_deriv_mode*(-w3a*(px_hi[i] + gyzHL)) - wm4 * wn_window[P,P,M]
 			        coef[P,P,P] = is_deriv_mode*(-w3a*(px_hi[i] + gyzHH)) - wm4 * wn_window[P,P,P]
-                    coef[N,N,N] = is_deriv_mode*(-cx*px[i] - cy*py[j] - cz*pz[k]) + cNNN*wn_window[N,N,N]                    
+                    coef[N,N,N] = is_deriv_mode*(-cx*px[i] - cy*py[j] - cz*pz[k]) + cNNN*wn_window[N,N,N]
                     t = complex(0.0,0.0);
                     for kk=1:3
                         for jj=1:3
@@ -182,28 +182,28 @@ else
                                  @inbounds x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
                              else
                                  @inbounds x_window[ii,jj,kk] = zero_x
-                             end                            
+                             end
                          end
-                     end                    
+                     end
                  end
                  iM,iN,iP = i,i+1,i+2
                  coef[M,M,M] = -wm4*wNNN + is_deriv_mode*(-w3a*(px_hi[iM] + py_hi[jM] + pz_hi[kM]))
-                 coef[N,M,M] = -wm3*wNNN + is_deriv_mode*((-yz_coef) * (pz_hi[kM] + py_hi[jM]) + w3a*px[iN])        
+                 coef[N,M,M] = -wm3*wNNN + is_deriv_mode*((-yz_coef) * (pz_hi[kM] + py_hi[jM]) + w3a*px[iN])
                  coef[P,M,M] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_lo[iP] + py_hi[jM] + pz_hi[kM]))
                  coef[M,N,M] = -wm3*wNNN + is_deriv_mode*(-xz_coef * (px_hi[iM] + pz_hi[kM]) + w3a*py[jN])
 
                  coef[N,N,M] = -wm2*wNNN + is_deriv_mode*(cz*pz_hi[kM] + yz_coef*py[jN] + xz_coef*px[iN])
                  coef[P,N,M] = -wm3*wNNN + is_deriv_mode*(-xz_coef * (pz_hi[kM] + px_lo[iP]) + w3a*py[jN])
-                 coef[M,P,M] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_hi[iM] + py_lo[jP] + pz_hi[kM] ));		
+                 coef[M,P,M] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_hi[iM] + py_lo[jP] + pz_hi[kM] ));
                  coef[N,P,M] = -wm3*wNNN + is_deriv_mode*(-yz_coef * (py_lo[jP] + pz_hi[kM]) + w3a*px[iN])
                  coef[P,P,M] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_lo[iP] + py_lo[jP] + pz_hi[kM]))
                  coef[M,M,N] = -wm3*wNNN + is_deriv_mode*(-xy_coef * (px_hi[iM] + py_hi[jM]) + w3a*pz[kN])
                  coef[N,M,N] = -wm2*wNNN + is_deriv_mode*(cy*py_hi[jM] + yz_coef*pz[kN] + xy_coef*px[iN])
                  coef[P,M,N] = -wm3*wNNN + is_deriv_mode*(-xy_coef * (px_lo[iP] + py_hi[jM]) + w3a*pz[kN]	)
-                 coef[M,N,N] = -wm2*wNNN + is_deriv_mode*(cx*px_hi[iM] + xz_coef*pz[kN] + xy_coef*py[jN])                
+                 coef[M,N,N] = -wm2*wNNN + is_deriv_mode*(cx*px_hi[iM] + xz_coef*pz[kN] + xy_coef*py[jN])
                  coef[N,N,N] = cNNN*wNNN - is_deriv_mode*( cx*px[iN] + cy*py[jN] + cz*pz[kN])
-                 coef[P,N,N] = -wm2*wNNN + is_deriv_mode*(cx*px_lo[iP] + xz_coef*pz[kN] + xy_coef*py[jN])               
-               
+                 coef[P,N,N] = -wm2*wNNN + is_deriv_mode*(cx*px_lo[iP] + xz_coef*pz[kN] + xy_coef*py[jN])
+
                  coef[M,P,N] = -wm3*wNNN + is_deriv_mode*(-xy_coef * (px_hi[iM] + py_lo[jP]) + w3a*pz[kN])
                  coef[N,P,N] = -wm2*wNNN + is_deriv_mode*(cy*py_lo[jP] + yz_coef*pz[kN] + xy_coef*px[iN])
                  coef[P,P,N] = -wm3*wNNN + is_deriv_mode*(-xy_coef * (px_lo[iP] + py_lo[jP]) + w3a*pz[kN])
@@ -215,8 +215,8 @@ else
                  coef[P,N,P] = -wm3*wNNN + is_deriv_mode*(-xz_coef * (pz_lo[kP] + px_lo[iP]) + w3a*py[jN])
                  coef[M,P,P] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_hi[iM] + py_lo[jP] + pz_lo[kP]))
                  coef[N,P,P] = -wm3*wNNN + is_deriv_mode*(-yz_coef * (pz_lo[kP] + py_lo[jP]) + w3a*px[iN])
-                 coef[P,P,P] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_lo[iP] + py_lo[jP] + pz_lo[kP]))                 
-                 
+                 coef[P,P,P] = -wm4*wNNN + is_deriv_mode*(-w3a*( px_lo[iP] + py_lo[jP] + pz_lo[kP]))
+
                  t = complex(0.0,0.0);
                  for kk=1:3
                      for jj=1:3
@@ -225,7 +225,7 @@ else
                          end
                      end
                  end
-                 y[i,j,k] = t;    
+                 y[i,j,k] = t;
              end
         end
     end
@@ -243,7 +243,7 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
    Curt Da Silva, 2016
 """
     M,N,P = 1,2,3
-    
+
     nx,ny,nz = n[1],n[2],n[3]
     hx,hy,hz = Δ[1]^2,Δ[2]^2,Δ[3]^2
     hyz  = hy + hz
@@ -251,11 +251,11 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
     hxz = hx + hz
     hxyz = hx + hy + hz
 
-    
-    npxlo,npxhi,npylo,npyhi,npzlo,npzhi = npml[1,1],npml[2,1],npml[1,2],npml[2,2],npml[1,3],npml[2,3]    
+
+    npxlo,npxhi,npylo,npyhi,npzlo,npzhi = npml[1,1],npml[2,1],npml[1,2],npml[2,2],npml[1,3],npml[2,3]
 
     y = zeros(Complex{F},tuple(n...))
-   
+
     # Create PML functions
     px_lo,px_hi = pml_func(nx,npxlo,npxhi)
     px = px_lo+px_hi
@@ -263,7 +263,7 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
     py = py_lo+py_hi
     pz_lo,pz_hi = pml_func(nz,npzlo,npzhi)
     pz = pz_lo+pz_hi
-    
+
     # Weights
     w1  = 1.8395262e-5
     w2  = 0.29669233333333334
@@ -284,11 +284,11 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
     yz_coef = w2/(2*hyz)
     wn_window = zeros(F,3,3,3)
     coef = zeros(Complex{F},3,3,3,nx,ny,nz)
-    
+
     for k = 1:nz
         ks = (k > 1)? -1 : 0
         ke = (k < nz)? 1 : 0
-        zoff = ks:ke        
+        zoff = ks:ke
         for j = 1:ny
             js = (j > 1)? -1 : 0
             je = (j < ny)? 1 : 0
@@ -297,7 +297,7 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
                 is = (i > 1)? -1 : 0
                 ie = (i < nx) ? 1 : 0
                 xoff = is:ie
-                # Load wn_window              
+                # Load wn_window
 			    wn_window[2+xoff,2+yoff,2+zoff] = wn[i+xoff,j+yoff,k+zoff]
                 cxz = xz_coef*pz[k]
 	            cxzlo = xz_coef*pz_lo[k]
@@ -305,14 +305,14 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
 	            cyz = yz_coef*pz[k]
 	            cyzlo = yz_coef*pz_lo[k]
 	            cyzhi = yz_coef*pz_hi[k]
-                
+
                 c1 = xy_coef*py[j] + cxz
 		        c2_lo = cy*py_lo[j] + cyz
 		        c2_hi = cy*py_hi[j] + cyz
 		        c3_lo = yz_coef*py[j] + cz*pz_lo[k]
 		        c3_hi = yz_coef*py[j] + cz*pz_hi[k]
-                
-			    coef[M,N,N,i,j,k] = cx*px_lo[i] + c1 - wm2 * wn_window[M,N,N]			
+
+			    coef[M,N,N,i,j,k] = cx*px_lo[i] + c1 - wm2 * wn_window[M,N,N]
 			    coef[P,N,N,i,j,k] = cx*px_hi[i] + c1 - wm2 * wn_window[P,N,N]
 			    coef[N,M,N,i,j,k] = xy_coef*px[i] + c2_lo - wm2 * wn_window[N,M,N]
 			    coef[N,P,N,i,j,k] = xy_coef*px[i] + c2_hi - wm2 * wn_window[N,P,N]
@@ -340,7 +340,7 @@ function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},A
 			    coef[P,P,M,i,j,k] = -2*w3a*(px_hi[i] + py_hi[j] + pz_lo[k]) - wm4 * wn_window[P,P,M]
 			    coef[P,P,P,i,j,k] = -2*w3a*(px_hi[i] + py_hi[j] + pz_hi[k]) - wm4 * wn_window[P,P,P]
 			    coef[N,N,N,i,j,k] = -cx*px[i] - cy*py[j] - cz*pz[k] + cNNN*wn_window[N,N,N]
-               
+
             end
         end
     end
@@ -377,9 +377,9 @@ for k=[M N P]
         for i=[M N P]
             idx_start = 1
             idx_end = Nel
-            offset = 0  
+            offset = 0
             # For the coefficients before the diagonal, in lexographial organization
-            # Remove the coefficient 
+            # Remove the coefficient
             if t < 14
                 if i==M
                     idx_start += 1
@@ -398,7 +398,7 @@ for k=[M N P]
                 if k==M
                     idx_start += nx*ny
                     offset -= nx*ny
-                end                
+                end
             elseif t > 14
                 if i==M
                     idx_end += 1
@@ -417,12 +417,12 @@ for k=[M N P]
                 if k==P
                     idx_end -= nx*ny
                     offset += nx*ny
-                end                
+                end
             end
             push!(coef_tup,vec(coef[i,j,k,:,:,:])[idx_start:idx_end])
             push!(offset_tup,offset)
-            
-            t += 1            
+
+            t += 1
         end
     end
 end
@@ -479,11 +479,11 @@ function helm3d_std_7pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},Abstract
                                 x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
                             else
                                 x_window[ii,jj,kk] = complex(0,0)
-                            end                            
+                            end
                         end
                     end
                 end
-                
+
                 ξxM = ξx(i-0.5)
                 ξxN = ξx(i)
                 ξxP = ξx(i+0.5)
@@ -530,7 +530,7 @@ function helm3d_std_7pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},A
     for i=1:7
         push!(coef,zeros(Complex{F},nx,ny,nz))
     end
-    
+
     for k=1:nz
         ξzM = ξz(k-0.5)
         ξzN = ξz(k)
@@ -547,7 +547,7 @@ function helm3d_std_7pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},A
             ξyhi = ξyP*ξyN*hy_isq
             coef[NMN][:,j,k] = -ξylo
             coef[NPN][:,j,k] = -ξyhi
-            for i=1:nx                                 
+            for i=1:nx
                 ξxM = ξx(i-0.5)
                 ξxN = ξx(i)
                 ξxP = ξx(i+0.5)
@@ -569,7 +569,7 @@ function helm3d_std_7pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},A
     Nel = nx*ny*nz
     H = spdiagm((vec(coef[NNM])[nx*ny+1:end],vec(coef[NMN])[nx+1:end],vec(coef[MNN])[2:end],vec(coef[NNN]),vec(coef[PNN][1:end-1]),vec(coef[NPN][1:end-nx]),vec(coef[NNP][1:end-nx*ny])),(-nx*ny,-nx,-1,0,1,nx,nx*ny),Nel,Nel)
 
-    
+
 end
 
 
@@ -617,7 +617,7 @@ function helm3d_chen2012_27pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},Ab
         w1 = 1.7177071
         w2 = -3.2400262
         w3 = 3.8084643
-        w4 = -1.2861453 
+        w4 = -1.2861453
     elseif IGmin > 9 && IGmin <= 10
         γ1 = 0.8432810
         γ2 = -0.0414069
@@ -635,7 +635,7 @@ function helm3d_chen2012_27pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},Ab
         w3 = 7.4116566
         w4 = -2.4784594
     end
-    
+
     npxlo,npxhi,npylo,npyhi,npzlo,npzhi = npml[1,1],npml[2,1],npml[1,2],npml[2,2],npml[1,3],npml[2,3]
     maxnpx = max(npxlo,npxhi)
     maxnpy = max(npylo,npyhi)
@@ -643,7 +643,7 @@ function helm3d_chen2012_27pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},Ab
     ξx = x->ξ(x,nx,npxlo,npxhi,maxnpx,freq)
     ξy = y->ξ(y,ny,npylo,npyhi,maxnpy,freq)
     ξz = z->ξ(z,nz,npzlo,npzhi,maxnpz,freq)
-    
+
     k_sq = zeros(eltype(v),3,3,3)
     zero_t = convert(eltype(v),0)
     coef = zeros(Complex{F},3,3,3)
@@ -661,14 +661,14 @@ function helm3d_chen2012_27pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},Ab
             ξyN = ξy(k)
             ξyNplus = ξy(k+0.5)
             ξyP = ξy(k+1)
-            
+
             for i=1:nx
                 ξxM = ξx(i-1)
                 ξxNminus = ξx(i-0.5)
                 ξxN = ξx(i)
                 ξxNplus = ξx(i+0.5)
                 ξxP = ξx(i+1)
-                
+
                 # Load 3x3x3 windows around the current point
                 for kk=1:3
                     load_z = k+kk-2 > 0 && k+kk-2<=nz;
@@ -683,12 +683,12 @@ function helm3d_chen2012_27pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},Ab
                                 k_sq[ii,jj,kk] = zero_t
                                 x_window[ii,jj,kk] = complex(0,0)
                             end
-                            
+
                         end
                     end
                 end
-                
-                # Coefficient expressions 
+
+                # Coefficient expressions
                 coef[M,M,M] = γ3*hx_isq*ξxNminus*ξyM*ξzM/4 + γ3*hy_isq*ξxM*ξyNminus*ξzM/4 + γ3*hz_isq*ξxM*ξyM*ξzNminus/4 + k_sq[M,M,M]*w4*ξxM*ξyM*ξzM/8
                 coef[M,M,N] = γ2*hx_isq*ξxNminus*ξyM*ξzN/4 + γ2*hy_isq*ξxM*ξyNminus*ξzN/4 - γ3*hz_isq*ξxM*ξyM*ξzNminus/4 - γ3*hz_isq*ξxM*ξyM*ξzNplus/4 + k_sq[M,M,N]*w3*ξxM*ξyM*ξzN/12
                 coef[M,M,P] = γ3*hx_isq*ξxNminus*ξyM*ξzP/4 + γ3*hy_isq*ξxM*ξyNminus*ξzP/4 + γ3*hz_isq*ξxM*ξyM*ξzNplus/4 + k_sq[M,M,P]*w4*ξxM*ξyM*ξzP/8
@@ -772,7 +772,7 @@ function helm3d_chen2012_27pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{
         w1 = 1.7177071
         w2 = -3.2400262
         w3 = 3.8084643
-        w4 = -1.2861453 
+        w4 = -1.2861453
     elseif IGmin > 9 && IGmin <= 10
         γ1 = 0.8432810
         γ2 = -0.0414069
@@ -790,7 +790,7 @@ function helm3d_chen2012_27pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{
         w3 = 7.4116566
         w4 = -2.4784594
     end
-    
+
     npxlo,npxhi,npylo,npyhi,npzlo,npzhi = npml[1,1],npml[2,1],npml[1,2],npml[2,2],npml[1,3],npml[2,3]
     maxnpx = max(npxlo,npxhi)
     maxnpy = max(npylo,npyhi)
@@ -798,12 +798,12 @@ function helm3d_chen2012_27pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{
     ξx = x->ξ(x,nx,npxlo,npxhi,maxnpx,freq)
     ξy = y->ξ(y,ny,npylo,npyhi,maxnpy,freq)
     ξz = z->ξ(z,nz,npzlo,npzhi,maxnpz,freq)
-    
+
     k_sq = zeros(eltype(v),3,3,3)
     zero_t = convert(eltype(v),0)
     coef = zeros(Complex{F},3,3,3,n[1],n[2],n[3])
     x_window = zeros(Complex{F},3,3,3)
-    
+
     for k=1:nz
         ξzM = ξz(k-1)
         ξzNminus = ξz(k-0.5)
@@ -822,7 +822,7 @@ function helm3d_chen2012_27pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{
                 ξxN = ξx(i)
                 ξxNplus = ξx(i+0.5)
                 ξxP = ξx(i+1)
-                
+
                 # Load 3x3x3 windows around the current point
                 for kk=1:3
                     load_z = k+kk-2 > 0 && k+kk-2<=nz;
@@ -833,13 +833,13 @@ function helm3d_chen2012_27pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{
                             if load_x & load_y & load_z
                                 k_sq[ii,jj,kk] = ω2*(v[i+ii-2,j+jj-2,k+kk-2]^(-2))
                             else
-                                k_sq[ii,jj,kk] = zero_t                            
-                            end                            
+                                k_sq[ii,jj,kk] = zero_t
+                            end
                         end
                     end
                 end
-                
-                # Coefficient expressions 
+
+                # Coefficient expressions
                 coef[M,M,M,i,j,k] = γ3*hx_isq*ξxNminus*ξyM*ξzM/4 + γ3*hy_isq*ξxM*ξyNminus*ξzM/4 + γ3*hz_isq*ξxM*ξyM*ξzNminus/4 + k_sq[M,M,M]*w4*ξxM*ξyM*ξzM/8
                 coef[M,M,N,i,j,k] = γ2*hx_isq*ξxNminus*ξyM*ξzN/4 + γ2*hy_isq*ξxM*ξyNminus*ξzN/4 - γ3*hz_isq*ξxM*ξyM*ξzNminus/4 - γ3*hz_isq*ξxM*ξyM*ξzNplus/4 + k_sq[M,M,N]*w3*ξxM*ξyM*ξzN/12
                 coef[M,M,P,i,j,k] = γ3*hx_isq*ξxNminus*ξyM*ξzP/4 + γ3*hy_isq*ξxM*ξyNminus*ξzP/4 + γ3*hz_isq*ξxM*ξyM*ξzNplus/4 + k_sq[M,M,P]*w4*ξxM*ξyM*ξzP/8
@@ -912,9 +912,9 @@ for k=[M N P]
         for i=[M N P]
             idx_start = 1
             idx_end = Nel
-            offset = 0  
+            offset = 0
             # For the coefficients before the diagonal, in lexographial organization
-            # Remove the coefficient 
+            # Remove the coefficient
             if t < 14
                 if i==M
                     idx_start += 1
@@ -933,7 +933,7 @@ for k=[M N P]
                 if k==M
                     idx_start += nx*ny
                     offset -= nx*ny
-                end                
+                end
             elseif t > 14
                 if i==M
                     idx_end += 1
@@ -952,12 +952,12 @@ for k=[M N P]
                 if k==P
                     idx_end -= nx*ny
                     offset += nx*ny
-                end                
+                end
             end
             push!(coef_tup,vec(coef[i,j,k,:,:,:])[idx_start:idx_end])
             push!(offset_tup,offset)
-            
-            t += 1            
+
+            t += 1
         end
     end
 end
@@ -967,7 +967,7 @@ H = spdiagm(tuple(coef_tup...),tuple(offset_tup...),Nel,Nel)
 end
 
 
-function ξ(x,nx,nplo,nphi,maxnp,freq) 
+function ξ(x,nx,nplo,nphi,maxnp,freq)
     C = 10;
     dist_from_int = (x .< (nplo+1)) .* (nplo+1-x) + (x .>= nx-nphi) .* (x-(nx-nphi));
     sigma = C * (dist_from_int/maxnp).^2;
@@ -982,10 +982,9 @@ function pml_func(nx::Int,np_lo::Int,np_hi::Int)
     Lx_hi = np_hi/nx
     Lx_lo = np_lo/nx
     gamma = zeros(nx+2,1)
-    gamma[1:np_lo] = cos((pi*(0:np_lo-1) * s_hx)/(2*Lx_lo))
+    gamma[1:np_lo] = cos.((pi*(0:np_lo-1) * s_hx)/(2*Lx_lo))
     gamma[np_lo+1:nx+2-np_hi] = 0
-    gamma[nx+3-np_hi:nx+2] = cos((pi*(1-(nx+2-np_hi:nx+1)*s_hx))/(2*Lx_hi))
+    gamma[nx+3-np_hi:nx+2] = cos.((pi*(1-(nx+2-np_hi:nx+1)*s_hx))/(2*Lx_hi))
     return 2.0./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[1:nx] )), 2.0./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[3:nx+2] ))
 
 end
-
