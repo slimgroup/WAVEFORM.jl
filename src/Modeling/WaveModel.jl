@@ -89,7 +89,7 @@ function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
         
         src_batches = index_block(isrc,numcompsrc)
         
-        (H,comp_grid,T_forw,T_adj,DT_adj) = discrete_helmholtz(v,model,freq,opts)
+        (H,comp_grid,T,DT_adj) = helmholtz_system(v,model,freq,opts)
         phys_to_comp = comp_grid.phys_to_comp_grid       
         comp_to_phys = comp_grid.comp_to_phys_grid
         (Ps,Pr) = src_rec_interp_operators(model,comp_grid)
@@ -117,28 +117,28 @@ function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
                 f = f + ϕ
                 if compute_grad
                     v = H'\(-(Pr'*δϕ))
-                    g = g + sum_srcs(T_adj(u,v))
+                    g = g + sum_srcs(T(u)'*v)
                 end
             elseif op==field
                 output[:,data_idx] = u
             elseif op==forw_model
-                output[:,data_idx] = Pr*u            
+                output[:,data_idx] = Pr*u   
             elseif op==jacob_forw
-                δu = H\(-T_forw(u,δm))
+                δu = H\(-T(u)*δm)
                 output[:,data_idx] = Pr*δu
             elseif op==jacob_adj
                 v = H'\(-(Pr'*input[:,data_idx]))
-                output = output + sum_srcs(T_adj(u,v))            
+                output = output + sum_srcs(T(u)'*v)
             elseif op==hess_gn
-                δu = H\(-T_forw(u,δm))
+                δu = H\(-T(u)*δm)
                 δu = H'\(-(Pr'*(Pr*δu)))
-                output = output + sum_srcs(T_adj(u,δu))      
+                output = output + sum_srcs(T(u)*δu)
             elseif op==hess
                 (ϕ,δϕ,δ2ϕ) = misfit(Pr*u,Dobs[:,data_idx])
-                δu = H\(-T_forw(u,δm))
+                δu = H\(-T(u)*δm)
                 v = H'\(-Pr'*δϕ)
-                δv = H'\(-T_forw(v,δm) - Pr'*(δ2ϕ.* (Pr*δu) ) )
-                output = output + sum_srcs(DT_adj(u,δm,δu)*v+T_adj(u,δv))
+                δv = H'\(-T(v)*δm - Pr'*(δ2ϕ.* (Pr*δu) ) )
+                output = output + sum_srcs(DT_adj(u,δm,δu)*v+T(u)*δv)
             end
             npdes = npdes + length(current_src_idx)
         end

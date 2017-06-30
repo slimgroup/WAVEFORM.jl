@@ -58,7 +58,7 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
     const wm2 = 0.07516874999999999
     const wm3 = 0.004373916666666667
     const wm4 = 5.690375e-7
-    w3a = (2*0.041214225/hxyz)::F
+    w3a = 2*(w3*3/(4*hxyz))::F
 
     cx = - (w1/hx + w2/hx + w2/hxz + w2/hxy + 4*w3a)
     cy = - (w1/hy + w2/hy + w2/hyz + w2/hxy + 4*w3a)
@@ -159,7 +159,7 @@ function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},Abst
                             end
                         end
                     end
-                    y[i,j,k] = t;    
+                    y[i,j,k] = t;
                 end
             end
 end

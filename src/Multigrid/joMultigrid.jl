@@ -45,18 +45,18 @@ function multigrid_multiply(Hs,S,R,P,C,coarse_solver,b;forw_mode::Bool=true)
         bf = b_lvl[i]
         xf = S[i](bf,xf,forw_mode)
         if forw_mode
-            rf = bf-H[i]*xf
+            rf = bf-Hs[i]*xf
         else
-            rf = bf-H[i]'*xf
+            rf = bf-Hs[i]'*xf
         end
-        x_lvl[i+1] = R[i]*rf
-        b_lvl[i+1] = R[i]*bf
+        push!(x_lvl,R[i]*rf)
+        push!(b_lvl,R[i]*bf)
     end
     x = x_lvl[end]
-    x = coarse_solver(xc,zeros(xc),forw_mode)
+    x = C(x,zeros(x),forw_mode)
     for i=nlevels-1:-1:1
-        xf = x_lvl[i] + Pr*x
-        x = S[i](b_lvl[i],x,forw_mode)
+        xf = x_lvl[i] + P[i]*x
+        x = S[i](b_lvl[i],xf,forw_mode)
     end
     return x
 

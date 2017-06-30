@@ -83,7 +83,11 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
                 H = helm3d_operto_matrix(wn,dt,nt_pml,freq,npml)
             else
                 Hmvp = (x;forw=true)->helm3d_operto_mvp(wn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw)
-                H = joLinearFunctionFwdCT(N_system,N_system,x->Hmvp(x,forw=true),x->Hmvp(x,forw=false),Complex{F},Complex{F})            
+                H = joLinearFunctionFwdCT(N_system,N_system,x->Hmvp(x,forw=true),x->Hmvp(x,forw=false),Complex{F},Complex{F})
+                dHmvp = (x;forw=true)->helm3d_operto_mvp(dwn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw,deriv_mode=true)
+                dH = joLinearFunctionFwdCT(N_system,N_system,x->dHmvp(x,forw=true),x->dHmvp(x,forw=false),Complex{F},Complex{F})
+                ddHmvp = (x;forw=true)->helm3d_operto_mvp(ddwn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw,deriv_mode=true)
+                ddH = joLinearFunctionFwdCT(N_system,N_system,x->ddHmvp(x,forw=true),x->ddHmvp(x,forw=false),Complex{F},Complex{F})
             end
             
         elseif opts.pde_scheme==helm3d_std9
@@ -109,16 +113,15 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
             end
         end
     end
-
     
-    T = u-> joLinearFunctionFwdT( N_system,N_system,
+    T = u-> joLinearFunctionFwdCT( N_system,N_system,
                                   dm->dH*(dm.*u),
-                                  z->conj(u).*(dH'*z),Complex{F},fMVok=true)
+                                  z->conj(u).*(dH'*z),F,Complex{F},fMVok=true)
     DTadj = (u,dm,du)->joLinearFunctionFwdT(prod(nt_pml),prod(nt_pml),
                                             z->conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z),
                                             @joNF,Complex{F},fMVok=true)
 
-    return (opH,comp_grid,T,DTadj)
+    return (opH,comp_grid,lsopts,DTadj)
 end
 
 

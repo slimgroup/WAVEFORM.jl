@@ -70,6 +70,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
         return y
     elseif lsopts.solver==:lufact
         y = A\b
+        return y
     else
         throw(ArgumentError("Unrecognized solver $(lsopts.solver)"))
     end
