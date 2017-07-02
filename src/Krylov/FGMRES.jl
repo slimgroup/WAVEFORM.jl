@@ -58,8 +58,6 @@ function FGMRES{T<:Number}(A,
             Z[:,1] = r/beta
         else
             V[:,1] = r/beta
-            @show norm(V[:,1])
-            return (V[:,1],res)
         end
         j = 1
         for k=1:m
@@ -76,9 +74,6 @@ function FGMRES{T<:Number}(A,
                 w = w-V[:,1:k]*H[1:k,k]
             end
             H[k+1,k] = norm(w)
-            if outputfreq > 0
-                @show H[1:k+1,k]
-            end
             if prec_dirac
                 Z[:,k+1] = w./H[k+1,k]
             else

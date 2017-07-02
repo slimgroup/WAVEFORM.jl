@@ -49,7 +49,7 @@ function multigrid_multiply(Hs,S,R,P,C,coarse_solver,b;forw_mode::Bool=true)
         else
             rf = bf-Hs[i]'*xf
         end
-        push!(x_lvl,R[i]*rf)
+        push!(x_lvl,R[i]*rf)        
         push!(b_lvl,R[i]*bf)
     end
     x = x_lvl[end]
