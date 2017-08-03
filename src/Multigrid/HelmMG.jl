@@ -1,4 +1,4 @@
-export construct_helm_multigrid
+export construct_helm_multigrid, MLGMRES
 
 function construct_helm_multigrid{I<:Integer,F<:AbstractFloat}(H,v::AbstractArray{F,1},
         comp_grid::ComputationalGrid{I,F},
@@ -25,7 +25,7 @@ function construct_helm_multigrid{I<:Integer,F<:AbstractFloat}(H,v::AbstractArra
         newopts.npml = div.(pml_fine,coarse_factor^i)
 
         push!(S,solvesystem(H,smoother))
-        (to_coarse,to_fine,ncoarse) = fine2coarse(nt_nopml_fine,newopts.comp_d/coarse_factor,newopts.comp_d,eltype(v))
+        (to_coarse,to_fine,ncoarse) = fine2coarse(nt_nopml_fine,newopts.comp_d/coarse_factor,newopts.comp_d,eltype(v),interp_type=:cubic)
 
         vcoarse = to_coarse*vec(v)
         newopts.comp_n = ncoarse
@@ -33,7 +33,7 @@ function construct_helm_multigrid{I<:Integer,F<:AbstractFloat}(H,v::AbstractArra
             newopts.implicit_matrix = false
         end
         (H,comp_grid_coarse) = helmholtz_system(vcoarse,model,freq,newopts)
-        (to_coarse,to_fine,ntcoarse) = fine2coarse(nt_fine,comp_grid_coarse.comp_n,eltype(H))
+        (to_coarse,to_fine,ntcoarse) = fine2coarse(nt_fine,comp_grid_coarse.comp_n,eltype(H),interp_type=:linear)
         push!(R,c*to_coarse)
         push!(P,to_fine)
         push!(Hs,H)
@@ -43,4 +43,13 @@ function construct_helm_multigrid{I<:Integer,F<:AbstractFloat}(H,v::AbstractArra
     end
     C = solvesystem(Hs[end],coarse_solver)
     return (Hs,S,R,P,C)
+end
+
+function MLGMRES{I<:Integer,F<:AbstractFloat}(H::joAbstractOperator,v::AbstractArray{F,1},comp_grid::ComputationalGrid{I,F},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F}) 
+
+    smoother = Waveform.LinSolveOpts(solver=:fgmres,maxit=1,maxinnerit=5,precond=:identity);
+    coarse_solver = Waveform.LinSolveOpts(solver=:fgmres,maxit=1,maxinnerit=5,tol=0.5);
+    nlevels = 2;
+    (Hs,S,R,P,C) = Waveform.construct_helm_multigrid(H,v,comp_grid,model,freq,opts,smoother,coarse_solver,nlevels,explicit_coarse_mat=false);
+    M = Waveform.joMultigrid(Hs,S,R,P,C,coarse_solver,recursive_vcycle=false)
 end

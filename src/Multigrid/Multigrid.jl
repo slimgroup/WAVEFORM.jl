@@ -1,4 +1,2 @@
-include("construct_helm_multigrid.jl")
+include("HelmMG.jl")
 include("joMultigrid.jl")
-include("mg_vcycle.jl")
-include("MLGMRES.jl")

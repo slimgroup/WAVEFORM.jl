@@ -11,10 +11,10 @@ function joInvertibleMatrix{F<:Number}(A::AbstractMatrix{F};DDT::DataType=F,RDT:
     adj_div = v->conj(R).*(P'*(Lt\(Ut\(Q*v))))
     
     return joLinearFunctionCT(n,n,
-                               v->A*v,                               
-                               v->A'*v,
-                               forw_div,
-                               adj_div,
-                               DDT,RDT,name="joInvertibleMatrix",fMVok=true,iMVok=true)
+                              v->A*v,                               
+                              v->A'*v,
+                              forw_div,
+                              adj_div,
+                              DDT,RDT,name="joInvertibleMatrix",fMVok=true,iMVok=true)
 end
 

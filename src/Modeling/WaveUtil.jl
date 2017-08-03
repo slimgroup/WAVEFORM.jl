@@ -10,9 +10,9 @@ function index_block{I<:Integer}(idx,block_size::I)
 end
 
 function fwi_wavelet{F<:AbstractFloat}(freqs::AbstractArray{F,1},t0::F,f0::F)
-    w = exp(-2*π*im*t0*freqs)
+    w = exp.(-2*π*im*t0*freqs)
     if f0 > 0
-        w = freqs.^2 .* exp(-(freqs./f0).^2).*w
+        w = freqs.^2 .* exp.(-(freqs./f0).^2).*w
     end
     return w
 end
@@ -20,12 +20,13 @@ end
 # Convert odn coordinates to their full grid coordinates
 function odn_to_grid{F<:AbstractFloat,I<:Integer}(o::AbstractArray{F,1},d::AbstractArray{F,1},n::AbstractArray{I,1})
     (length(o)==length(d) && length(o)==length(n)) || throw(Exception("o,d,n must have the same length"))
-    x = Array{StepRangeLen{Float64},1}(length(o))
+    x = Array{StepRangeLen,1}(length(o))
     for i in 1:length(o)
-        x[i] = o[i] .+ (0:(n[i]-1))*d[i]
+        x[i] = o[i] + (0:(n[i]-1))*d[i]
     end
     return tuple(x...)
 end
+
 
 # Convert grid coordinates to odn coordinates
 function grid_to_odn{F<:AbstractFloat}(x::AbstractArray{StepRangeLen{F},1})

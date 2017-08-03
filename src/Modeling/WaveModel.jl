@@ -1,13 +1,16 @@
-function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
-                                              v::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
-                                              Q::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
-                                              Dobs::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
-                                              input::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
-                                              model::Model{I,F},
-                                              opts::PDEopts{I,F};
-                                              compute_grad::Bool=false,
-                                              srcfreqmask::AbstractArray{Bool,2}=Array(Bool,0,0))
+using PyPlot
 
+export PDEfunc!
+function PDEfunc!(op::PDEFUNC_OP,
+                  v::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
+                  Q::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
+                  Dobs::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
+                  input::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
+                  model::Model{I,F},
+                  opts::PDEopts{I,F};
+                  grad::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}}=Array{F}(0),
+                  srcfreqmask::AbstractArray{Bool,2}=Array{Bool}(0,0)) where {F<:AbstractFloat,I<:Integer}
+    
     nsrc = length(model.xsrc)*length(model.ysrc)*length(model.zsrc)
     nfreq = length(model.freq)
     nrec = length(model.xrec)*length(model.yrec)*length(model.zrec)
@@ -15,14 +18,14 @@ function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
     if isempty(srcfreqmask)
         srcfreqmask = trues(nsrc,nfreq)
     end
-    size(srcfreqmask,1)==nsrc && size(srcfreqmask,2)==nfreq || throw(ArgumentException("srcfreqmask must be a nsrc x nfreq matrix"))
+    size(srcfreqmask,1)==nsrc && size(srcfreqmask,2)==nfreq || error("srcfreqmask must be a nsrc x nfreq matrix")
     Iactive = find(vec(srcfreqmask))
     npde_out = length(Iactive)
     (iS,iF) = ind2sub((nsrc,nfreq),Iactive)
     freqsxsy = Array{Array{I,1},1}(nfreq)
     
     numcompsrc = (length(model.n)==2||model.n[3]==1) ? nsrc : 1
-    length(Dobs)==0 || length(Dobs)==nrec*npde_out || throw(ArgumentException("Dobs must be a nrec*npde length vector"))
+    length(Dobs)==0 || length(Dobs)==nrec*npde_out || error("Dobs must be a nrec*npde_out length vector")
     
     if !isempty(Dobs)
         Dobs = reshape(Dobs,nrec,npde_out)
@@ -33,7 +36,7 @@ function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
     elseif length(Q) ==nsrc*nsrc*nfreq
         Q = reshape(Q,(nsrc,nsrc,nfreq))
     else
-        throw(ArgumentException("Q must be nsrc x nsrc or nsrc x nsrc x nfreq"))
+        throw(Exception("Q must be nsrc x nsrc or nsrc x nsrc x nfreq"))
     end
     for i in 1:nfreq
         J = find(iF.==i)
@@ -46,12 +49,7 @@ function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
     if npde_out==0
         z = zeros(eltype(v),(nmodel))
         if op==objective
-            if compute_grad
-                return (0.0,z)
-            else
-                return (0.0)
-            end
-            
+            return 0.0            
         elseif op==forw_model || op==jacob_forw
             return (zeros(Complex{F},(nrec,0)))
         else
@@ -62,11 +60,13 @@ function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
     # Set up outputs 
     if op==objective
         f = 0.0
+        compute_grad = length(grad) > 0
         if compute_grad
-            g = zeros(eltype(v),(nmodel))
+            length(grad)==length(v) || error("length(g) $(length(g)) != length(v) $(length(v))")
+            fill!(grad,0.0)
         end
         misfit = opts.misfit
-    elseif op==forw_model||op==jacob_forw
+    elseif op in [forw_model jacob_forw]
         output = zeros(Complex{F},(nrec,npde_out))
     else
         output = zeros(F,(nmodel))
@@ -88,12 +88,11 @@ function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
         isrc = freqsxsy[k]
         
         src_batches = index_block(isrc,numcompsrc)
-        
         (H,comp_grid,T,DT_adj) = helmholtz_system(v,model,freq,opts)
         phys_to_comp = comp_grid.phys_to_comp_grid       
         comp_to_phys = comp_grid.comp_to_phys_grid
         (Ps,Pr) = src_rec_interp_operators(model,comp_grid)
-        if length(find(op.==[jacob_forw hess_gn hess]))>0
+        if op in [jacob_forw hess_gn hess]
             δm = phys_to_comp*input;
         end
 
@@ -110,48 +109,47 @@ function PDEfunc{F<:AbstractFloat,I<:Integer}(op::PDEFUNC_OP,
             q = q*prod(model.d)/prod(comp_grid.comp_d)            
             
             data_idx = npdes:npdes+length(current_src_idx)-1
-            u = H\q
+            
+            # Wavefield solve
+            U = H\q
+            
             sum_srcs = x->comp_to_phys*sum(real(x),2)
             if op==objective
-                (ϕ,δϕ) = misfit(Pr*u,Dobs[:,data_idx])
-                f = f + ϕ
+                (ϕ,δϕ) = misfit(Pr*U,Dobs[:,data_idx])
+                f += ϕ
                 if compute_grad
-                    v = H'\(-(Pr'*δϕ))
-                    g = g + sum_srcs(T(u)'*v)
+                    V = H'\(-(Pr'*δϕ))
+                    grad .+= squeeze(sum_srcs(T(U)'*V),2)
                 end
             elseif op==field
-                output[:,data_idx] = u
+                output[:,data_idx] = U
             elseif op==forw_model
-                output[:,data_idx] = Pr*u   
+                output[:,data_idx] = Pr*U
             elseif op==jacob_forw
-                δu = H\(-T(u)*δm)
-                output[:,data_idx] = Pr*δu
+                δU = H\(-T(U)*δm)
+                output[:,data_idx] = Pr*δU
             elseif op==jacob_adj
-                v = H'\(-(Pr'*input[:,data_idx]))
-                output = output + sum_srcs(T(u)'*v)
+                V = H'\(-(Pr'*input[:,data_idx]))
+                output .+= sum_srcs(T(U)'*V)
             elseif op==hess_gn
-                δu = H\(-T(u)*δm)
-                δu = H'\(-(Pr'*(Pr*δu)))
-                output = output + sum_srcs(T(u)*δu)
+                δU = H\(-T(U)*δm)
+                δU .= H'\(-(Pr'*(Pr*δU)))
+                output .+= sum_srcs(T(U)*δU)
             elseif op==hess
-                (ϕ,δϕ,δ2ϕ) = misfit(Pr*u,Dobs[:,data_idx])
-                δu = H\(-T(u)*δm)
-                v = H'\(-Pr'*δϕ)
-                δv = H'\(-T(v)*δm - Pr'*(δ2ϕ.* (Pr*δu) ) )
-                output = output + sum_srcs(DT_adj(u,δm,δu)*v+T(u)*δv)
+                (ϕ,δϕ,δ2ϕ) = misfit(Pr*U,Dobs[:,data_idx])
+                δU = H\(-T(U)*δm)
+                V = H'\(-Pr'*δϕ)
+                δV = H'\(-T(V)*δm - Pr'*(δ2ϕ.* (Pr*δU) ) )
+                output .+= sum_srcs(DT_adj(U,δm,δU)*V+T(U)*δv)
             end
-            npdes = npdes + length(current_src_idx)
+            npdes += length(current_src_idx)
         end
     end
-    if(op==objective)
-        if compute_grad
-            return (f,g)
-        else
-            return f
-        end
-    else
-        return output
-    end
+if(op==objective)
+    return f
+else
+    return output
+end
 end
 
 

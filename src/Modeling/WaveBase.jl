@@ -1,6 +1,6 @@
 export Model, PDEFUNC_OP, STENCIL2D, STENCIL3D, PDEopts
 
-type Model{IntType<:Integer,FloatType<:AbstractFloat}
+mutable struct Model{IntType<:Integer,FloatType<:AbstractFloat}
     n::AbstractArray{IntType,1}
     d::AbstractArray{FloatType,1}
     o::AbstractArray{FloatType,1}
@@ -23,7 +23,7 @@ end
 @enum STENCIL3D helm3d_operto27 helm3d_std9
 
 
-type PDEopts{IntType<:Integer,FloatType<:AbstractFloat}
+mutable struct PDEopts{IntType<:Integer,FloatType<:AbstractFloat}
     pde_scheme::Union{STENCIL2D,STENCIL3D}
     comp_n::AbstractArray{IntType,1}
     comp_d::AbstractArray{FloatType,1}
@@ -32,6 +32,7 @@ type PDEopts{IntType<:Integer,FloatType<:AbstractFloat}
     implicit_matrix::Bool
     npml::AbstractArray{IntType,2}
     misfit::Function
+    srcfreqmask::AbstractArray{Bool,2}
     lsopts::LinSolveOpts
 end
 

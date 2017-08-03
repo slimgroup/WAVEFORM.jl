@@ -40,56 +40,42 @@ function FGMRES{T<:Number}(A,
     res = Array{Float64,1}()
     push!(res,1.0)
     it_counter = 1
-    Z = Matrix{T}(n,m+1)
+    V = Matrix{T}(n,m+1)
     if prec_dirac
-        V = Matrix{T}(n,0)
+        Z = Matrix{T}(n,0)
     else
-        V = Matrix{T}(n,m+1)
+        Z = Matrix{T}(n,m+1)
     end    
     H = zeros(T,m+1,m)
     y = zeros(T,m)
-    
+    w = zeros(T,n)
+
     while hst[end] > tol && div(it_counter,m)<maxiter
 
         beta = norm(r)
-        if prec_dirac
-            Z[:,1] = r/beta
-        else
-            V[:,1] = r/beta
-        end
+        @. V[:,1] = r/beta            
 
         innerit = 1
         for k=1:m
-            if !prec_dirac
-                Z[:,k] = P(V[:,k])
-            end
-
-            w = A*Z[:,k]
             if prec_dirac
-                for j=1:k
-                    H[j,k] = dot(Z[:,j],w)
-                end
-                for j=1:k
-                    #@. w -= H[j,k]*Z[:,j]
-                    Base.BLAS.axpy!(-H[j,k],Z[:,j],w)
-                end
+                w .= A*(@view V[:,k])
             else
-                for j=1:k
-                    H[j,k] = dot(V[:,j],w)
-                end
-                for j=1:k
-                    #@. w -= H[j,k]*V[:,j]
-                    Base.BLAS.axpy!(-H[j,k],V[:,j],w)
-                end
+                Z[:,k] .= P(V[:,k])
+                w .= A*(@view Z[:,k])
+            end
+            for j=1:k
+                H[j,k] = dot((@view V[:,j]),w)
+                w .-= H[j,k].*(@view V[:,j])
             end
             H[k+1,k] = norm(w)
 
-            if prec_dirac
-                Z[:,k+1] = w/H[k+1,k]
-            else
-                V[:,k+1] = w/H[k+1,k]
+            if k<m
+                @. V[:,k+1] = w/H[k+1,k]
             end
-
+            
+            # Solve min_y || H[1:k+1,1:k]-beta*ej[1:k+1] ||_2
+            # We won't bother with dot-assignment here because
+            # the matrices are so small
             y[1:k] = H[1:k+1,1:k]\(beta*ej[1:k+1])
 
             push!(hst,norm(beta*ej[1:k+1]-H[1:k+1,1:k]*y[1:k])/normr0)
@@ -100,10 +86,17 @@ function FGMRES{T<:Number}(A,
             end
             it_counter += 1
         end
-        for k=1:innerit-1
-            x += y[k]*Z[:,k]
+        if prec_dirac
+            for k=1:innerit-1
+                x .+= y[k].*(@view V[:,k])
+            end
+        else
+            for k=1:innerit-1
+                x .+= y[k].*(@view Z[:,k])
+            end
         end
-        r = b - A*x
+
+        r .= b - A*x
         if outputfreq > 0 && mod(div(it_counter,m),outputfreq)==0
             @printf("it %3d res %3.3e\n",div(it_counter,m), norm(r)/normr0)
         end
