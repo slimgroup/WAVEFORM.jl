@@ -11,7 +11,10 @@ For more details, as well as the full design of the software, see (https://arxiv
 ## Installation
 In the Julia terminal, type
 ```
+Pkg.clone("git@github.com:slimgroup/JOLI.jl.git")
 Pkg.clone("git@github.com:slimgroup/WAVEFORM.jl.git")
 ```
 
 ## Examples
+Examples can be run from the examples/ directory. Currently there are only non-distributed examples available, but that will change in future updates.
+

@@ -1,6 +1,12 @@
-using JOLI
+# A simple 2D transmission full waveform inversion experiment
+# to showcase how this framework operates. Much of the 
+# 
+
+using JOLI   # Linear operators
 using PyPlot # For plotting
 using Waveform
+
+# Turn off annoying JOLI type checks
 JOLI.jo_type_mismatch_error_set(false)
 JOLI.jo_type_mismatch_warn_set(false)
 
@@ -91,6 +97,6 @@ imshow(real(D[:,1:nsrc]),aspect="auto");
 obj! = construct_pde_misfit(v,Q,D,model,opts,batch_mode=false)
 
 using OptimPackNextGen
-proj! = (xproj,x)->Waveform.project_bounds!(x,minimum(v),maximum(v),xproj);
+proj! = (xproj,x)->project_bounds!(x,minimum(v),maximum(v),xproj);
 vest = spg(obj!,proj!,v0,3,maxfc=50,verb=true)
 imshow(reshape(vest,model.n...),vmin=minimum(v),vmax=maximum(v))
