@@ -1,7 +1,9 @@
 using PyPlot
 
 export PDEfunc!
-function PDEfunc!(op::PDEFUNC_OP,
+pdefunc_ops = [:objective,:field,:forw_model,:jacob_forw,:jacob_adj,:hess,:hess_gn]
+
+function PDEfunc!(op::Symbol,
                   v::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
                   Q::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
                   Dobs::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
@@ -11,6 +13,7 @@ function PDEfunc!(op::PDEFUNC_OP,
                   grad::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}}=Array{F}(0),
                   srcfreqmask::AbstractArray{Bool,2}=Array{Bool}(0,0)) where {F<:AbstractFloat,I<:Integer}
     
+    op in pdefunc_ops || error("Unrecognized op $op, must be one of $pdefunc_ops")
     nsrc = length(model.xsrc)*length(model.ysrc)*length(model.zsrc)
     nfreq = length(model.freq)
     nrec = length(model.xrec)*length(model.yrec)*length(model.zrec)
@@ -48,9 +51,9 @@ function PDEfunc!(op::PDEFUNC_OP,
     # No work to do, just return the right outputs 
     if npde_out==0
         z = zeros(eltype(v),(nmodel))
-        if op==objective
+        if op==:objective
             return 0.0            
-        elseif op==forw_model || op==jacob_forw
+        elseif op in [:forw_model,:jacob_forw]
             return (zeros(Complex{F},(nrec,0)))
         else
             return (z)
@@ -58,7 +61,7 @@ function PDEfunc!(op::PDEFUNC_OP,
     end
     
     # Set up outputs 
-    if op==objective
+    if op==:objective
         f = 0.0
         compute_grad = length(grad) > 0
         if compute_grad
@@ -66,11 +69,11 @@ function PDEfunc!(op::PDEFUNC_OP,
             fill!(grad,0.0)
         end
         misfit = opts.misfit
-    elseif op in [forw_model jacob_forw]
+    elseif op in [:forw_model,:jacob_forw]
         output = zeros(Complex{F},(nrec,npde_out))
     else
         output = zeros(F,(nmodel))
-        if op==jacob_adj
+        if op==:jacob_adj
             input = reshape(input,nrec,npde_out)
         end
     end    
@@ -92,7 +95,7 @@ function PDEfunc!(op::PDEFUNC_OP,
         phys_to_comp = comp_grid.phys_to_comp_grid       
         comp_to_phys = comp_grid.comp_to_phys_grid
         (Ps,Pr) = src_rec_interp_operators(model,comp_grid)
-        if op in [jacob_forw hess_gn hess]
+        if op in [:jacob_forw :hess_gn :hess]
             δm = phys_to_comp*input;
         end
 
@@ -114,28 +117,28 @@ function PDEfunc!(op::PDEFUNC_OP,
             U = H\q
             
             sum_srcs = x->comp_to_phys*sum(real(x),2)
-            if op==objective
+            if op==:objective
                 (ϕ,δϕ) = misfit(Pr*U,Dobs[:,data_idx])
                 f += ϕ
                 if compute_grad
                     V = H'\(-(Pr'*δϕ))
                     grad .+= squeeze(sum_srcs(T(U)'*V),2)
                 end
-            elseif op==field
+            elseif op==:field
                 output[:,data_idx] = U
-            elseif op==forw_model
+            elseif op==:forw_model
                 output[:,data_idx] = Pr*U
-            elseif op==jacob_forw
+            elseif op==:jacob_forw
                 δU = H\(-T(U)*δm)
                 output[:,data_idx] = Pr*δU
-            elseif op==jacob_adj
+            elseif op==:jacob_adj
                 V = H'\(-(Pr'*input[:,data_idx]))
                 output .+= sum_srcs(T(U)'*V)
-            elseif op==hess_gn
+            elseif op==:hess_gn
                 δU = H\(-T(U)*δm)
                 δU .= H'\(-(Pr'*(Pr*δU)))
                 output .+= sum_srcs(T(U)*δU)
-            elseif op==hess
+            elseif op==:hess
                 (ϕ,δϕ,δ2ϕ) = misfit(Pr*U,Dobs[:,data_idx])
                 δU = H\(-T(U)*δm)
                 V = H'\(-Pr'*δϕ)
@@ -145,7 +148,7 @@ function PDEfunc!(op::PDEFUNC_OP,
             npdes += length(current_src_idx)
         end
     end
-if(op==objective)
+if(op==:objective)
     return f
 else
     return output

@@ -29,7 +29,7 @@ function misfit_func!(v,Q,D,model,opts,I,g)
         Dobs = D
     end
     c = 1/length(I)    
-    f = PDEfunc!(objective,v,Q,Dobs,Null,model,opts,grad=g,srcfreqmask=sfmask)
+    f = PDEfunc!(:objective,v,Q,Dobs,Null,model,opts,grad=g,srcfreqmask=sfmask)
     f = c*f
     @. g = c*g
     return f

@@ -18,7 +18,6 @@ end
 
 
 
-@enum PDEFUNC_OP objective field forw_model jacob_forw jacob_adj hess hess_gn
 @enum STENCIL2D helm2d_chen9p helm2d_std7
 @enum STENCIL3D helm3d_operto27 helm3d_std9
 
