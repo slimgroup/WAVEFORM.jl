@@ -88,7 +88,7 @@ v0 = vec(v0);
 imshow(v);
 
 Q = eye(nsrc);
-D = ForwModel(v,Q,model,opts);
+D = forw_model(v,Q,model,opts);
 
 
 # Plot a frequency slice
