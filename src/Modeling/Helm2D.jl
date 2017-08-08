@@ -65,8 +65,77 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     nz,nx = n
     N = nz*nx
     Δz,Δx = d
-    @assert Δz==Δx "Z and x spacing must be identical"
-    @assert f0 > 0 "f0 must be positive"
+    Δz==Δx || error("z and x spacing must be identical")
+    f0 > 0 || error("f0 must be positive")
+    h = Δz
+    npz = npml[1,:]
+    npx = npml[2,:]
+    a0 = 1.79
+    v = reshape(v,nz,nx)
+    (k,dk,ddk) = param_to_wavenum(v,freq,unit)
+    
+    vmin = minimum(vec(v))
+    vmax = maximum(vec(v))
+    Gmin = vmin/(h*freq)
+    Gmax = vmax/(h*freq)
+    IG = Gmin
+    if IG >= 2.5 && IG <= 3
+        b,d,e = (0.6803,0.444,0.0008)
+    elseif IG >= 3 && IG <= 4
+        b,d,e = (0.73427,0.4088,-0.0036)
+    elseif IG >= 4 && IG <= 5
+        b,d,e = (0.7840,0.3832,-0.0060)
+    elseif IG >= 5 && IG <= 6
+        b,d,e = (0.802,0.3712,-0.0072)
+    elseif IG >= 6 && IG <= 8
+        b,d,e = (0.8133,0.3637,-0.0075)
+    elseif IG >= 8 && IG <= 10
+        b,d,e = (0.8219,0.3578,-0.0078)
+    elseif IG >= 10 && IG <= 400
+        b,d,e = (0.8271,0.3540,-0.0080)
+    end
+    c = 1-d-e
+    
+    ex = pml_func1d(nx,npx,a0,f0,freq)
+    ez = pml_func1d(nz,npz,a0,f0,freq)
+    A=(i,j)->ex(j)./ez(i)
+    B=(i,j)->ez(i)./ex(j)
+    I = ["M","N","P"]
+    Hcoef = Dict{String,Array{Complex{eltype(v)},2}}()
+    NNcoef = (i,j) -> -b*(A(i+0.5,j) + A(i-0.5,j)+B(i,j+0.5)+B(i,j-0.5)) + c*k[i,j]
+    PNcoef = (i,j) -> b*A(i+0.5,j) - (1-b)/2*(B(i+1,j+0.5)+B(i+1,j-0.5)) + d/4*k[i+1,j] 
+    MNcoef = (i,j) -> b*A(i-0.5,j) - (1-b)/2*(B(i-1,j+0.5)+B(i-1,j-0.5)) + d/4*k[i-1,j]
+        
+    Hcoef["NN"] = [ NNcoef(i,j) for i=1:nz,j=1:nx]
+    Hcoef["PN"] = [ i < nz ? PNcoef(i,j) : 0.0 + 0.0*im for i=1:nz,j=1:nx ]
+    Hcoef["MN"] = [ i > 1 ? MNcoef(i,j) : 0.0 + 0.0*im for i=1:nz,j=1:nx ]
+    Hcoef["NP"]
+    Hcoef["NM"]
+    Hcoef["MP"]
+    Hcoef["PP"]
+    Hcoef["MM"]
+    Hcoef["PM"]
+    
+    
+    
+    H = L + A*spdiagm(vec(k))
+    
+    dH = A*spdiagm(vec(dk))  
+    ddH = A*spdiagm(vec(ddk))
+    
+    return H,dH,ddH
+end
+
+function helm2d_chen2013v(n,d,npml,freq,v,f0,unit::String)
+  # 9pt stencil from  Chen, et. al. "AN OPTIMAL 9-POINT FINITE DIFFERENCE
+  # SCHEME FOR THE HELMHOLTZ EQUATION WITH PML", 2013
+  #
+    
+    nz,nx = n
+    N = nz*nx
+    Δz,Δx = d
+    Δz==Δx || error("z and x spacing must be identical")
+    f0 > 0 || error("f0 must be positive")
     h = Δz
     npz = npml[1,:]
     npx = npml[2,:]
@@ -107,9 +176,8 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     Lx = j->kron(lx,spdiagm(ez(zg+j)[offset_range(j,nz)],(j),nz,nz))
     lz = 1/Δz^2*spdiagm((1./ez_down[2:end],-(1./ez_down+1./ez_up),1./ez_up[1:end-1]),(-1,0,1),nz,nz)
     Lz = j->kron(spdiagm(ex(xg+j)[offset_range(j,nx)],(j),nx,nx),lz)
-    
-    L̃x = b*Lx(0) + (1-b)/2*(Lx(-1) + Lx(1))
-    L̃z = b*Lz(0) + (1-b)/2*(Lz(-1) + Lz(1))
+
+    L = b*Lx(0) + (1-b)/2*(Lx(-1) + Lx(1)) + b*Lz(0) + (1-b)/2*(Lz(-1) + Lz(1))
 
     # Neighbourhood notation around the point uNN
     #
@@ -150,9 +218,8 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     
     I45 = 1/4*spdiagm((vec(eMM)[(nz+2):N],vec(ePM)[nz:N],vec(eMP)[1:N-nz+1],vec(ePP)[1:N-(nz+1)]),(-nz-1,-nz+1,nz-1,nz+1),N,N)
     
-    I = c*spdiagm(ones(N))+d*I0+e*I45;
-    A = I*kron(spdiagm(ex(xg)),spdiagm(ez(zg)))
-    H = L̃x + L̃z + A*spdiagm(vec(k))
+    A = (c*spdiagm(ones(N))+d*I0+e*I45)*kron(spdiagm(ex(xg)),spdiagm(ez(zg)))
+    H = L + A*spdiagm(vec(k))
     
     dH = A*spdiagm(vec(dk))  
     ddH = A*spdiagm(vec(ddk))

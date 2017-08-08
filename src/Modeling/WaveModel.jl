@@ -12,7 +12,7 @@ function PDEfunc!(op::Symbol,
                   opts::PDEopts{I,F};
                   grad::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}}=Array{F}(0),
                   srcfreqmask::AbstractArray{Bool,2}=Array{Bool}(0,0)) where {F<:AbstractFloat,I<:Integer}
-    
+
     op in pdefunc_ops || error("Unrecognized op $op, must be one of $pdefunc_ops")
     nsrc = length(model.xsrc)*length(model.ysrc)*length(model.zsrc)
     nfreq = length(model.freq)
@@ -54,7 +54,7 @@ function PDEfunc!(op::Symbol,
         if op==:objective
             return 0.0            
         elseif op in [:forw_model,:jacob_forw]
-            return (zeros(Complex{F},(nrec,0)))
+            return (zeros{Complex{F}}(nrec,0))
         else
             return (z)
         end
@@ -80,9 +80,10 @@ function PDEfunc!(op::Symbol,
     npdes = 1
     freqs = model.freq
     w = fwi_wavelet(freqs,model.t0,model.f0)
-    
+
     freq_idx = 0
     for k in 1:nfreq
+       
         if isempty(freqsxsy[k])
             continue
         end
@@ -100,6 +101,7 @@ function PDEfunc!(op::Symbol,
         end
 
         for j in 1:length(src_batches)
+
             current_src_idx = src_batches[j]
             # Scaling so that the wavefield amplitudes are the same for different grid spacings
             if ndims(Q)==3
@@ -112,7 +114,7 @@ function PDEfunc!(op::Symbol,
             q = q*prod(model.d)/prod(comp_grid.comp_d)            
             
             data_idx = npdes:npdes+length(current_src_idx)-1
-            
+
             # Wavefield solve
             U = H\q
             

@@ -5,10 +5,13 @@ function FGMRES{T<:Number}(A,
                            maxiter::Number=Inf,
                            precond=nothing,
                            tol::AbstractFloat=1e-6,
-                           outputfreq::Integer=0)::Tuple{Vector{T},Vector{Float64}}
+                           outputfreq::Integer=0,
+                           tag::String="")::Tuple{Vector{T},Vector{Float64}}
 
     n = size(A,2)
-    
+    if length(tag) > 0
+        println(tag * " start")
+    end
     size(A,1)==size(A,2) || throw(ArgumentError("A must be square"))
     size(b,1)==n || throw(ArgumentError("A and b must have compatible dimensions"))
     size(b,2)==1 || throw(ArgumentError("b must be a vector"))
@@ -60,7 +63,7 @@ function FGMRES{T<:Number}(A,
             if prec_dirac
                 w .= A*(@view V[:,k])
             else
-                Z[:,k] .= P(V[:,k])
+                Z[:,k] .= (P(@view V[:,k]))::Vector{T}
                 w .= A*(@view Z[:,k])
             end
             for j=1:k
@@ -105,5 +108,9 @@ function FGMRES{T<:Number}(A,
             break
         end
     end
+    if length(tag) > 0
+        println(tag * " end")
+    end
+    
     return (x,res)
 end

@@ -3,7 +3,7 @@ export linearsolve, LinSolver, Precond, LinSolveOpts, solvesystem
 using JOLI
 
 const LinSolver = Set([:fgmres,:lufact])
-const Precond = Set([:mlgmres,:identity])
+const Precond = Set([:vgmres,:mlgmres,:identity])
 
 type LinSolveOpts
     tol::Float64
@@ -12,17 +12,19 @@ type LinSolveOpts
     solver::Symbol
     precond::Union{Symbol,Function,LinSolveOpts,joAbstractOperator}
     outputfreq::Int64
+    tag::String
     function LinSolveOpts(;tol::Float64=1e-6,
                           maxit::Int64=10000,
                           maxinnerit::Int64=20,
                           solver::Symbol=:fgmres,
                           precond::Union{Symbol,Function}=:identity,
-                          outputfreq::Int64=0)
+                          outputfreq::Int64=0,
+                          tag::String="")
         solver in LinSolver || throw(ArgumentError("Invalid solver $(solver), valid options are $(LinSolver)"))
         if typeof(precond)==Symbol
             precond in Precond || throw(ArgumentError("Invalid preconditioner: $(precond)"))
         end
-        new(tol,maxit,maxinnerit,solver,precond,outputfreq)
+        new(tol,maxit,maxinnerit,solver,precond,outputfreq,tag)
     end
 end
 
@@ -66,7 +68,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
     end
 
     if lsopts.solver==:fgmres
-        (y,res) = FGMRES(A,b,x0,m=lsopts.maxinnerit,maxiter=lsopts.maxit,tol=lsopts.tol,precond=P,outputfreq=lsopts.outputfreq)
+        (y,res) = FGMRES(A,b,x0,m=lsopts.maxinnerit,maxiter=lsopts.maxit,tol=lsopts.tol,precond=P,outputfreq=lsopts.outputfreq,tag=lsopts.tag)
         return y
     elseif lsopts.solver==:lufact
         y = A\b

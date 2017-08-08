@@ -15,9 +15,10 @@ function joMultigrid(Hs,S,R,P,C,coarse_solver;
             Pf = P[i]
             Sf = S[i]
             coarse_solver = deepcopy(coarse_solver)
+            coarse_solver.tag = "Coarse solve level "*string(i)
             coarse_solver.precond = old_cs
             CS = solvesystem(Hc,coarse_solver)
-            prepend!(coarse_solves,[(b,x,mode::Bool)->Waveform.mg_vcycle(Hf,b,x,Rf,Pf,CS,Sf,Sf,forw_mode=mode)])
+            prepend!(coarse_solves,[(b,x,mode::Bool)->multigrid_vcycle(Hf,Sf,Rf,Pf,CS,b,x,forw_mode=mode)])
         end
         solver = coarse_solves[1]
         return joLinearFunctionFwdCT(n,n,
@@ -26,17 +27,30 @@ function joMultigrid(Hs,S,R,P,C,coarse_solver;
                                      eltype(Hs[1]),name="Recursive Multigrid Preconditioner")
     else
         return joLinearFunctionFwdCT(n,n,
-                             x->multigrid_multiply(Hs,S,R,P,C,coarse_solver,x,forw_mode=true),
-                             x->multigrid_multiply(Hs,S,R,P,C,coarse_solver,x,forw_mode=false),
+                             x->multigrid_multiply(Hs,S,R,P,C,x,forw_mode=true),
+                             x->multigrid_multiply(Hs,S,R,P,C,x,forw_mode=false),
                              eltype(Hs[1]),name="V cycle Multigrid preconditioner")
     end
 
 end
 
-function multigrid_multiply(Hs,S,R,P,C,coarse_solver,b;forw_mode::Bool=true)
+function multigrid_vcycle(H,S,R,P,C,b,x;forw_mode::Bool=true)
+    xf = S(b,x,forw_mode)
+    if forw_mode
+        r = b-H*xf
+    else
+        r = b-H'*xf
+    end
+    xc = R*r
+    xc = C(xc,zeros(xc),forw_mode)
+    xf .+= P*xc
+    xf = S(b,xf,forw_mode)
+end
+
+function multigrid_multiply(Hs,S,R,P,C,b;forw_mode::Bool=true)
     x = zeros(b)
-    x_lvl = Array{typeof(x),1}()
-    b_lvl = Array{typeof(x),1}()
+    x_lvl = Array{typeof(b),1}()
+    b_lvl = Array{typeof(b),1}()
     push!(x_lvl,x)
     push!(b_lvl,b)
     nlevels = length(Hs)

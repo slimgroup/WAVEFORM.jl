@@ -63,18 +63,19 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
     comp_grid = ComputationalGrid{I,F}(phys_to_comp,comp_to_phys,vec(ot_pml),vec(dt),vec(nt_pml),vec(nt_nopml))
     N_system = prod(nt_pml)
 
-    # Set up preconditioner
-
+    # Set up system matrix
     if ndims==2
+        @time begin
         if opts.pde_scheme==helm2d_chen9p
             (H,dH,ddH) = helm2d_chen2013(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
         elseif opts.pde_scheme==helm2d_std7
             (H,dH,ddH) = helm2d_std7(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
         end
+            end
         if lsopts.solver==:lufact
             opH = joInvertibleMatrix(H)
         else
-            throw(ArgumentError("Unimplemented method $(opts.lsopts.solver) for 2D"))
+            error("Unimplemented method $(opts.lsopts.solver) for 2D")
         end
     elseif ndims==3
         if opts.pde_scheme==helm3d_operto27
@@ -93,13 +94,14 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
         elseif opts.pde_scheme==helm3d_std9
 
         end
-        P = x->x;
         if lsopts.precond==:mlgmres
             P = MLGMRES(H,vec(v),comp_grid,model,freq,opts)
-            lsopts.precond = P
+        elseif lsopts.precond==:vgmres            
+            P = VGMRES(H,vec(v),comp_grid,model,freq,opts)
         else
-            lsopts.precond = :identity
+            P = :identity
         end
+        lsopts.precond = P
         if lsopts.solver==:lufact
             opH = joInvertibleMatrix(H)
         else
@@ -123,7 +125,7 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
                                             z->conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z),
                                             @joNF,Complex{F},fMVok=true)
 
-    return (opH,comp_grid,T,DTadj)
+    return (opH,comp_grid,T,DTadj,P)
 end
 
 

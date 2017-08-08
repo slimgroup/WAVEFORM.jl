@@ -1,4 +1,5 @@
-# WAVEFORM - a softWAre enVironmEnt For nOnlinear inveRse probleMs
+WAVEFORM - a softWAre enVironmEnt For nOnlinear inveRse probleMs
+================================================================
 
 Waveform is a flexible and modular approach to solving PDE-constrained inverse problems that aims to
 - accurately reflect the underlying mathematics of the problem
@@ -8,13 +9,15 @@ Waveform is a flexible and modular approach to solving PDE-constrained inverse p
 
 For more details, as well as the full design of the software, see (https://arxiv.org/abs/1703.09268) and for the original Matlab implementation, see (https://github.com/slimgroup/WAVEFORM). All functions are written by Curt Da Silva (curt.dasilva@gmail.com), unless indicated otherwise in the function documentation.
 
-## Installation
+Installation
+------------
 In the Julia terminal, type
 ```
 Pkg.clone("git@github.com:slimgroup/JOLI.jl.git")
 Pkg.clone("git@github.com:slimgroup/WAVEFORM.jl.git")
 ```
 
-## Examples
+Examples
+--------
 Examples can be run from the examples/ directory. Currently there are only non-distributed examples available, but that will change in future updates.
 
