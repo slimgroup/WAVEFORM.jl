@@ -57,8 +57,8 @@ end
 
 function MLGMRES{I<:Integer,F<:AbstractFloat}(H::joAbstractOperator,v::AbstractArray{F,1},comp_grid::ComputationalGrid{I,F},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F}) 
 
-    smoother = LinSolveOpts(solver=:fgmres,maxit=3,maxinnerit=5,precond=:identity);
-    coarse_solver = LinSolveOpts(solver=:fgmres,maxit=3,maxinnerit=5,tol=0.5,outputfreq=1);
+    smoother = LinSolveOpts(solver=:fgmres,maxit=1,maxinnerit=2,precond=:identity);
+    coarse_solver = LinSolveOpts(solver=:fgmres,maxit=1,maxinnerit=2,tol=0.5,outputfreq=1);
     nlevels = 3;
     (Hs,S,R,P,C) = construct_helm_multigrid(H,v,comp_grid,model,freq,opts,smoother,coarse_solver,nlevels,explicit_coarse_mat=false);
     M = joMultigrid(Hs,S,R,P,C,coarse_solver,recursive_vcycle=true)

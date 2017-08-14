@@ -145,7 +145,7 @@ function PDEfunc!(op::Symbol,
                 δU = H\(-T(U)*δm)
                 V = H'\(-Pr'*δϕ)
                 δV = H'\(-T(V)*δm - Pr'*(δ2ϕ.* (Pr*δU) ) )
-                output .+= sum_srcs(DT_adj(U,δm,δU)*V+T(U)*δv)
+                output .+= sum_srcs(DT_adj(U,δm,δU)*V+T(U)*δV)
             end
             npdes += length(current_src_idx)
         end

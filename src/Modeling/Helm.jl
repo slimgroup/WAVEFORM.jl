@@ -120,10 +120,10 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
 
     T = u-> joLinearFunctionFwdCT( N_system,N_system,
                                   dm->dH*(dm.*u),
-                                  z->conj(u).*(dH'*z),F,Complex{F},fMVok=true)
+                                  z->real(conj(u).*(dH'*z)),F,Complex{F},fMVok=true)
     DTadj = (u,dm,du)->joLinearFunctionFwdT(prod(nt_pml),prod(nt_pml),
-                                            z->conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z),
-                                            @joNF,Complex{F},fMVok=true)
+                                            z->real(conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z)),
+                                            @joNF,F,Complex{F},fMVok=true)
 
     return (opH,comp_grid,T,DTadj,P)
 end
