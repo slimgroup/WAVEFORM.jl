@@ -51,17 +51,17 @@ function helm2d_7pt(n,d,npml,freq,v,f0,unit::String)
 
   H = Dz + Dx + A*spdiagm(vec(k))
 
-  dH = A*spdiagm(vec(dk))  
+  dH = A*spdiagm(vec(dk))
   ddH = A*spdiagm(vec(ddk))
-  
+
   return H,dH,ddH
 end
 
-function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
+function helm2d_chen2013p(n,d,npml,freq,v,f0,unit::String)
   # 9pt stencil from  Chen, et. al. "AN OPTIMAL 9-POINT FINITE DIFFERENCE
   # SCHEME FOR THE HELMHOLTZ EQUATION WITH PML", 2013
   #
-    
+
     nz,nx = n
     N = nz*nx
     Δz,Δx = d
@@ -73,7 +73,7 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     a0 = 1.79
     v = reshape(v,nz,nx)
     (k,dk,ddk) = param_to_wavenum(v,freq,unit)
-    
+
     vmin = minimum(vec(v))
     vmax = maximum(vec(v))
     Gmin = vmin/(h*freq)
@@ -95,7 +95,7 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
         b,d,e = (0.8271,0.3540,-0.0080)
     end
     c = 1-d-e
-    
+
     ex = pml_func1d(nx,npx,a0,f0,freq)
     ez = pml_func1d(nz,npz,a0,f0,freq)
     A=(i,j)->ex(j)./ez(i)
@@ -103,9 +103,9 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     I = ["M","N","P"]
     Hcoef = Dict{String,Array{Complex{eltype(v)},2}}()
     NNcoef = (i,j) -> -b*(A(i+0.5,j) + A(i-0.5,j)+B(i,j+0.5)+B(i,j-0.5)) + c*k[i,j]
-    PNcoef = (i,j) -> b*A(i+0.5,j) - (1-b)/2*(B(i+1,j+0.5)+B(i+1,j-0.5)) + d/4*k[i+1,j] 
+    PNcoef = (i,j) -> b*A(i+0.5,j) - (1-b)/2*(B(i+1,j+0.5)+B(i+1,j-0.5)) + d/4*k[i+1,j]
     MNcoef = (i,j) -> b*A(i-0.5,j) - (1-b)/2*(B(i-1,j+0.5)+B(i-1,j-0.5)) + d/4*k[i-1,j]
-        
+
     Hcoef["NN"] = [ NNcoef(i,j) for i=1:nz,j=1:nx]
     Hcoef["PN"] = [ i < nz ? PNcoef(i,j) : 0.0 + 0.0*im for i=1:nz,j=1:nx ]
     Hcoef["MN"] = [ i > 1 ? MNcoef(i,j) : 0.0 + 0.0*im for i=1:nz,j=1:nx ]
@@ -115,22 +115,22 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     Hcoef["PP"]
     Hcoef["MM"]
     Hcoef["PM"]
-    
-    
-    
+
+
+
     H = L + A*spdiagm(vec(k))
-    
-    dH = A*spdiagm(vec(dk))  
+
+    dH = A*spdiagm(vec(dk))
     ddH = A*spdiagm(vec(ddk))
-    
+
     return H,dH,ddH
 end
 
-function helm2d_chen2013v(n,d,npml,freq,v,f0,unit::String)
+function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
   # 9pt stencil from  Chen, et. al. "AN OPTIMAL 9-POINT FINITE DIFFERENCE
   # SCHEME FOR THE HELMHOLTZ EQUATION WITH PML", 2013
   #
-    
+
     nz,nx = n
     N = nz*nx
     Δz,Δx = d
@@ -141,7 +141,7 @@ function helm2d_chen2013v(n,d,npml,freq,v,f0,unit::String)
     npx = npml[2,:]
     a0 = 1.79
     (k,dk,ddk) = param_to_wavenum(v,freq,unit)
-    
+
     vmin = minimum(vec(v))
     vmax = maximum(vec(v))
     Gmin = vmin/(h*freq)
@@ -163,7 +163,7 @@ function helm2d_chen2013v(n,d,npml,freq,v,f0,unit::String)
         b,d,e = (0.8271,0.3540,-0.0080)
     end
     c = 1-d-e
-    
+
     ex = pml_func1d(nx,npx,a0,f0,freq)
     ez = pml_func1d(nz,npz,a0,f0,freq)
     xg = 1:nx
@@ -188,7 +188,7 @@ function helm2d_chen2013v(n,d,npml,freq,v,f0,unit::String)
     #    uPM  -- uPN -- uPP
     #
     #
-    
+
     # Average along the points uMN, uPN,uNM,uNP
     # Eliminate points that don't have these offsets as neighbours
     eNM = ones(nz,nx)
@@ -200,7 +200,7 @@ function helm2d_chen2013v(n,d,npml,freq,v,f0,unit::String)
     ePN = ones(nz,nx)
     ePN[end,:] = 0
     I0 = 1/4*spdiagm( (vec(eNM)[nz+1:N],vec(eNP)[1:N-nz],vec(eMN)[2:N],vec(ePN)[1:N-1]),(-nz,nz,-1,1),N,N )
-    
+
     # Average along the points uMM,uMP,uPM,uPP (corners of square above)
     # Eliminate points that don't have these offsets as neighbours
     eMM = ones(nz,nx)
@@ -215,15 +215,15 @@ function helm2d_chen2013v(n,d,npml,freq,v,f0,unit::String)
     eMP = ones(nz,nx)
     eMP[1,:] = 0
     eMP[:,end] = 0
-    
+
     I45 = 1/4*spdiagm((vec(eMM)[(nz+2):N],vec(ePM)[nz:N],vec(eMP)[1:N-nz+1],vec(ePP)[1:N-(nz+1)]),(-nz-1,-nz+1,nz-1,nz+1),N,N)
-    
+
     A = (c*spdiagm(ones(N))+d*I0+e*I45)*kron(spdiagm(ex(xg)),spdiagm(ez(zg)))
     H = L + A*spdiagm(vec(k))
-    
-    dH = A*spdiagm(vec(dk))  
+
+    dH = A*spdiagm(vec(dk))
     ddH = A*spdiagm(vec(ddk))
-    
+
     return H,dH,ddH
 end
 
@@ -255,8 +255,8 @@ function param_to_wavenum(v,freq,unit::String)
     ω2 = (2*pi*freq)^2
     if unit == "m/s"
         f = ω2*(v.^(-2))
-        df = -2*ω2*(v.^(-3))        
-        ddf = 6*ω2*(v.^(-4))        
+        df = -2*ω2*(v.^(-3))
+        ddf = 6*ω2*(v.^(-4))
     elseif unit == "s/m"
         f = ω2*(v.^2)
         df = 2*ω2*v

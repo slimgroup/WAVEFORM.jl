@@ -64,19 +64,18 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
     N_system = prod(nt_pml)
 
     # Set up system matrix
-    if ndims==2
-        @time begin
+    if ndims==2        
         if opts.pde_scheme==helm2d_chen9p
             (H,dH,ddH) = helm2d_chen2013(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
         elseif opts.pde_scheme==helm2d_std7
             (H,dH,ddH) = helm2d_std7(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
         end
-            end
         if lsopts.solver==:lufact
             opH = joInvertibleMatrix(H)
         else
             error("Unimplemented method $(opts.lsopts.solver) for 2D")
         end
+        P = :identity
     elseif ndims==3
         if opts.pde_scheme==helm3d_operto27
             (wn,dwn,ddwn) = param_to_wavenum(v_pml,freq,model.unit)
@@ -96,7 +95,7 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
         end
         if lsopts.precond==:mlgmres
             P = MLGMRES(H,vec(v),comp_grid,model,freq,opts)
-        elseif lsopts.precond==:vgmres            
+        elseif lsopts.precond==:vgmres
             P = VGMRES(H,vec(v),comp_grid,model,freq,opts)
         else
             P = :identity
