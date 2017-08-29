@@ -140,6 +140,7 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     npz = npml[1,:]
     npx = npml[2,:]
     a0 = 1.79
+    
     (k,dk,ddk) = param_to_wavenum(v,freq,unit)
 
     vmin = minimum(vec(v))

@@ -64,7 +64,7 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
     N_system = prod(nt_pml)
 
     # Set up system matrix
-    if ndims==2        
+    if ndims==2
         if opts.pde_scheme==helm2d_chen9p
             (H,dH,ddH) = helm2d_chen2013(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
         elseif opts.pde_scheme==helm2d_std7
@@ -124,7 +124,7 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
                                             z->real(conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z)),
                                             @joNF,F,Complex{F},fMVok=true)
 
-    return (opH,comp_grid,T,DTadj,P)
+    return (opH,comp_grid,T,DTadj)
 end
 
 

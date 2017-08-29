@@ -22,14 +22,14 @@ function PDEfunc!(op::Symbol,
         srcfreqmask = trues(nsrc,nfreq)
     end
     size(srcfreqmask,1)==nsrc && size(srcfreqmask,2)==nfreq || error("srcfreqmask must be a nsrc x nfreq matrix")
-    Iactive = find(vec(srcfreqmask))
+    Iactive = find(srcfreqmask)
     npde_out = length(Iactive)
     (iS,iF) = ind2sub((nsrc,nfreq),Iactive)
     freqsxsy = Array{Array{I,1},1}(nfreq)
-    
+
     numcompsrc = (length(model.n)==2||model.n[3]==1) ? nsrc : 1
     length(Dobs)==0 || length(Dobs)==nrec*npde_out || error("Dobs must be a nrec*npde_out length vector")
-    
+
     if !isempty(Dobs)
         Dobs = reshape(Dobs,nrec,npde_out)
     end
@@ -45,22 +45,24 @@ function PDEfunc!(op::Symbol,
         J = find(iF.==i)
         if !isempty(J)
             freqsxsy[i] = iS[J]
+        else
+            freqsxsy[i] = Array{I,1}()
         end
     end
-    
-    # No work to do, just return the right outputs 
+
+    # No work to do, just return the right outputs
     if npde_out==0
         z = zeros(eltype(v),(nmodel))
         if op==:objective
-            return 0.0            
+            return 0.0
         elseif op in [:forw_model,:jacob_forw]
             return (zeros{Complex{F}}(nrec,0))
         else
             return (z)
         end
     end
-    
-    # Set up outputs 
+
+    # Set up outputs
     if op==:objective
         f = 0.0
         compute_grad = length(grad) > 0
@@ -76,24 +78,25 @@ function PDEfunc!(op::Symbol,
         if op==:jacob_adj
             input = reshape(input,nrec,npde_out)
         end
-    end    
+    end
     npdes = 1
     freqs = model.freq
     w = fwi_wavelet(freqs,model.t0,model.f0)
 
     freq_idx = 0
     for k in 1:nfreq
-       
+
         if isempty(freqsxsy[k])
             continue
         end
         freq_idx = freq_idx+1
         freq = freqs[k]
         isrc = freqsxsy[k]
-        
+
         src_batches = index_block(isrc,numcompsrc)
+
         (H,comp_grid,T,DT_adj) = helmholtz_system(v,model,freq,opts)
-        phys_to_comp = comp_grid.phys_to_comp_grid       
+        phys_to_comp = comp_grid.phys_to_comp_grid
         comp_to_phys = comp_grid.comp_to_phys_grid
         (Ps,Pr) = src_rec_interp_operators(model,comp_grid)
         if op in [:jacob_forw :hess_gn :hess]
@@ -109,17 +112,18 @@ function PDEfunc!(op::Symbol,
             else
                 q = Q[:,current_src_idx]
             end
-            
+
             q = jo_convert(Complex{F},Ps*(w[k]*q))
-            q = q*prod(model.d)/prod(comp_grid.comp_d)            
-            
+            q = q*prod(model.d)/prod(comp_grid.comp_d)
             data_idx = npdes:npdes+length(current_src_idx)-1
 
             # Wavefield solve
             U = H\q
-            
             sum_srcs = x->comp_to_phys*sum(real(x),2)
             if op==:objective
+                #figure()
+                #imshow(real(Pr*U),aspect="auto")
+                #title("Pred data at $(model.freq[k]) Hz")
                 (ϕ,δϕ) = misfit(Pr*U,Dobs[:,data_idx])
                 f += ϕ
                 if compute_grad
@@ -164,8 +168,8 @@ function src_rec_interp_operators{F<:AbstractFloat,I<:Integer}(model::Model{I,F}
     DT = Complex{F}
     RT = Complex{F}
     opS(x,y) = joSincInterp(x,y,DomainT=DT,RangeT=RT)
-    if ndims==2        
-        (zt,xt) = odn_to_grid(comp_grid)        
+    if ndims==2
+        (zt,xt) = odn_to_grid(comp_grid)
         Ps = joKron(opS(model.xsrc,xt),opS(model.zsrc,zt))
         Pr = joKron(opS(xt,model.xrec),opS(zt,model.zrec))
     else

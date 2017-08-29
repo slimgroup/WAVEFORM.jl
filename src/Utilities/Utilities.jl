@@ -1,4 +1,4 @@
-export fine2coarse
+export fine2coarse, partition
 
 # Generates interpolators from a fine grid to a coarse grid
 #
@@ -72,4 +72,27 @@ function fine2coarse(n,d,d_sub...;interp_type::Symbol=:linear)
         throw(ArgumentError("n must be 1, 2, or 3 dimensional"))
     end
     return (f2c,c2f,n_sub)
+end
+
+# Partition the vector 1:N in to chunks of size P with a given overlap
+# Note, some combinations of N, P, overlap will not yield a partition that goes exactly
+# up to N, so a row with a possibly different overlap could be added to the end
+#
+# Usage:
+#   y = partition(N,P,overlap)
+#
+# Input:
+#   N       - number of elements
+#   P       - partition size
+#   overlap - number of elements to overlap
+#
+# Output:
+#   y       - matrix of indices of size P x # partitions
+#             each column correponds to a chunk of indices
+function partition(N,P,overlap)
+    y = collect(1:P) .+ collect(0:(P-overlap):(N-P))'
+    if maximum(y[:,end]) < N
+        y = [y; (N-P+1):N]
+    end    
+    return y
 end
