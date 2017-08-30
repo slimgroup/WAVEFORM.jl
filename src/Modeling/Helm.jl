@@ -1,6 +1,6 @@
 using JOLI
 
-export discrete_helmholtz, ComputationalGrid, odn_to_grid
+export helmholtz_system, ComputationalGrid, odn_to_grid
 
 mutable struct ComputationalGrid{I<:Integer,F<:AbstractFloat}
     phys_to_comp_grid::joAbstractOperator
@@ -124,7 +124,7 @@ function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},mod
                                             z->real(conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z)),
                                             @joNF,F,Complex{F},fMVok=true)
 
-    return (opH,comp_grid,T,DTadj)
+    return (opH,comp_grid,T,DTadj,P)
 end
 
 
