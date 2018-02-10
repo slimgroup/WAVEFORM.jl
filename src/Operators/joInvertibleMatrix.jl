@@ -1,4 +1,4 @@
-function joInvertibleMatrix{F<:Number}(A::AbstractMatrix{F};DDT::DataType=F,RDT::DataType=promote_type(F,DDT))
+function joInvertibleMatrix(A::AbstractMatrix{F};DDT::DataType=F,RDT::DataType=promote_type(F,DDT)) where {F<:Number}
     (m,n) = size(A)
     m==n || throw(ArgumentError("A must be square"))
     T = lufact(A);

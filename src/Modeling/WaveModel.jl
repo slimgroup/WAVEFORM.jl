@@ -162,7 +162,7 @@ end
 end
 
 
-function src_rec_interp_operators{F<:AbstractFloat,I<:Integer}(model::Model{I,F},comp_grid::ComputationalGrid{I,F})
+function src_rec_interp_operators(model::Model{I,F},comp_grid::ComputationalGrid{I,F}) where {F<:AbstractFloat,I<:Integer}
     ndims = (length(model.n)==2||model.n[3]==1) ? 2 : 3
     kaiser_window_param = 4
     DT = Complex{F}

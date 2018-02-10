@@ -2,7 +2,7 @@
 
 
 
-function helm3d_operto_mvp{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3};forw_mode::Bool=true,deriv_mode::Bool=false)
+function helm3d_operto_mvp(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3};forw_mode::Bool=true,deriv_mode::Bool=false) where {F<:Real,I<:Integer}
 """
    helm3d_operto_mvp(wn,h,nt,npml,x,y,forw_mode,deriv_mode)
 ``````````
@@ -236,7 +236,7 @@ end
 
 
 
-function helm3d_operto_matrix{F<:Real,I<:Integer}(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2})
+function helm3d_operto_matrix(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2}) where {F<:Real,I<:Integer}
 """
    helm3d_operto_matrix(wn,h,nt,npml)
 
@@ -431,7 +431,7 @@ H = spdiagm(tuple(coef_tup...),tuple(offset_tup...),Nel,Nel)
 
 end
 
-function helm3d_std_7pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3};forw_mode::Bool=true,deriv_mode::Bool=true)
+function helm3d_std_7pt(v::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3};forw_mode::Bool=true,deriv_mode::Bool=true) where {F<:Real,I<:Integer}
     nx,ny,nz = n[1],n[2],n[3]
     hx,hy,hz = Δ[1],Δ[2],Δ[3]
     hx_isq = 1/hx^2
@@ -501,7 +501,7 @@ function helm3d_std_7pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},Abstract
 end
 
 
-function helm3d_std_7pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2};forw_mode::Bool=true,deriv_mode::Bool=true)
+function helm3d_std_7pt_matrix(v::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2};forw_mode::Bool=true,deriv_mode::Bool=true) where {F<:Real,I<:Integer}
     nx,ny,nz = n[1],n[2],n[3]
     hx,hy,hz = Δ[1],Δ[2],Δ[3]
     hx_isq = 1/hx^2
@@ -574,7 +574,7 @@ end
 
 
 
-function helm3d_chen2012_27pt{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3};forw_mode::Bool=true,deriv_mode::Bool=true)
+function helm3d_chen2012_27pt(v::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3};forw_mode::Bool=true,deriv_mode::Bool=true) where {F<:Real,I<:Integer}
     nx,ny,nz = n[1],n[2],n[3]
     hx,hy,hz = Δ[1],Δ[2],Δ[3]
     hx_isq = 1/hx^2
@@ -729,7 +729,7 @@ end
 return vec(y)
 end
 
-function helm3d_chen2012_27pt_matrix{F<:Real,I<:Integer}(v::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2};deriv_mode::Bool=true)
+function helm3d_chen2012_27pt_matrix(v::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2};deriv_mode::Bool=true) where {F<:Real,I<:Integer}
     nx,ny,nz = n[1],n[2],n[3]
     hx,hy,hz = Δ[1],Δ[2],Δ[3]
     hx_isq = 1/hx^2

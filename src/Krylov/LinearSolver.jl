@@ -5,7 +5,7 @@ using JOLI
 const LinSolver = Set([:fgmres,:lufact])
 const Precond = Set([:vgmres,:mlgmres,:identity])
 
-type LinSolveOpts
+mutable struct LinSolveOpts
     tol::Float64
     maxit::Int64
     maxinnerit::Int64

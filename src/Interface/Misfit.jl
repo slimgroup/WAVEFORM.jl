@@ -21,7 +21,7 @@ function misfit_func!(v,Q,D,model,opts,I,g)
     if length(I)==0
         I = 1:length(find(opts.srcfreqmask))
     end
-    Null = Array{Float64}(0)
+    Null = Array{Float64,1}(0)
     nsrc = length(model.xsrc)*length(model.ysrc)*length(model.zsrc)
     nfreq = length(model.freq)
     (size(opts.srcfreqmask,1)==nsrc && size(opts.srcfreqmask,2)==nfreq) || error("opts.srcfreqmask must be nsrc x nfreq, got $(size(opts.srcfreqmask,1)) x $(size(opts.srcfreqmask,2))")

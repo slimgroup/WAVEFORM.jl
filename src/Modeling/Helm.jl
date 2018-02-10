@@ -12,11 +12,11 @@ mutable struct ComputationalGrid{I<:Integer,F<:AbstractFloat}
     comp_n_nopml::AbstractArray{I,1}
 end
 
-function odn_to_grid{F<:AbstractFloat,I<:Integer}(comp_grid::ComputationalGrid{I,F})
+function odn_to_grid(comp_grid::ComputationalGrid{I,F}) where {F<:AbstractFloat,I<:Integer}
     return odn_to_grid(comp_grid.comp_o,comp_grid.comp_d,comp_grid.comp_n)
 end
 
-function helmholtz_system{I<:Integer,F<:AbstractFloat}(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F})
+function helmholtz_system(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F}) where {I<:Integer,F<:AbstractFloat}
 
     ndims = (length(opts.comp_n)==2 || opts.comp_n[3]==1) ? 2 : 3
     lsopts = deepcopy(opts.lsopts)
@@ -131,18 +131,18 @@ end
 
 function get_pad_ext_ops(nt_nopml,npml,ndims)
     if ndims == 2
-        Pext = joKron(joExtension(nt_nopml[2],JOLI.pad_border,pad_lower=npml[1,2],pad_upper=npml[2,2]),
-                      joExtension(nt_nopml[1],JOLI.pad_border,pad_lower=npml[1,1],pad_upper=npml[2,1]))
-        Ppad = joKron(joExtension(nt_nopml[2],JOLI.pad_zeros,pad_lower=npml[1,2],pad_upper=npml[2,2]),
-                      joExtension(nt_nopml[1],JOLI.pad_zeros,pad_lower=npml[1,1],pad_upper=npml[2,1]))
+        Pext = joKron(joExtend(nt_nopml[2],:border,pad_lower=npml[1,2],pad_upper=npml[2,2]),
+                      joExtend(nt_nopml[1],:border,pad_lower=npml[1,1],pad_upper=npml[2,1]))
+        Ppad = joKron(joExtend(nt_nopml[2],:zeros,pad_lower=npml[1,2],pad_upper=npml[2,2]),
+                      joExtend(nt_nopml[1],:zeros,pad_lower=npml[1,1],pad_upper=npml[2,1]))
     else
 
-        Pext = joKron(joExtension(nt_nopml[3],JOLI.pad_border,pad_lower=npml[1,3],pad_upper=npml[2,3]),
-                      joExtension(nt_nopml[2],JOLI.pad_border,pad_lower=npml[1,2],pad_upper=npml[2,2]),
-                      joExtension(nt_nopml[1],JOLI.pad_border,pad_lower=npml[1,1],pad_upper=npml[2,1]))
-        Ppad = joKron(joExtension(nt_nopml[3],JOLI.pad_zeros,pad_lower=npml[1,3],pad_upper=npml[2,3]),
-                      joExtension(nt_nopml[2],JOLI.pad_zeros,pad_lower=npml[1,2],pad_upper=npml[2,2]),
-                      joExtension(nt_nopml[1],JOLI.pad_zeros,pad_lower=npml[1,1],pad_upper=npml[2,1]))
+        Pext = joKron(joExtend(nt_nopml[3],:border,pad_lower=npml[1,3],pad_upper=npml[2,3]),
+                      joExtend(nt_nopml[2],:border,pad_lower=npml[1,2],pad_upper=npml[2,2]),
+                      joExtend(nt_nopml[1],:border,pad_lower=npml[1,1],pad_upper=npml[2,1]))
+        Ppad = joKron(joExtend(nt_nopml[3],:zeros,pad_lower=npml[1,3],pad_upper=npml[2,3]),
+                      joExtend(nt_nopml[2],:zeros,pad_lower=npml[1,2],pad_upper=npml[2,2]),
+                      joExtend(nt_nopml[1],:zeros,pad_lower=npml[1,1],pad_upper=npml[2,1]))
     end
     return (Pext,Ppad)
 end
