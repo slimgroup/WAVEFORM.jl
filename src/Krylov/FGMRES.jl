@@ -1,12 +1,12 @@
-function FGMRES{T<:Number}(A,
-                           b::AbstractVector{T},
-                           x0::AbstractVector{T};
-                           m::Integer=10,
-                           maxiter::Number=Inf,
-                           precond=nothing,
-                           tol::AbstractFloat=1e-6,
-                           outputfreq::Integer=0,
-                           tag::String="")::Tuple{Vector{T},Vector{Float64}}
+function FGMRES(A,
+                b::AbstractVector{T},
+                x0::AbstractVector{T};
+                m::Integer=10,
+                maxiter::Number=Inf,
+                precond=nothing,
+                tol::AbstractFloat=1e-6,
+                outputfreq::Integer=0,
+                tag::String="")::Tuple{Vector{T},Vector{Float64}} where {T<:Number}
 
     n = size(A,2)
     if length(tag) > 0

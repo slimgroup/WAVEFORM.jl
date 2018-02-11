@@ -1,4 +1,5 @@
-export joMultigrid
+export joMultigrid, multigrid_multiply
+
 
 function joMultigrid(Hs,S,R,P,C,coarse_solver;
                      recursive_vcycle::Bool=false)
@@ -15,15 +16,9 @@ function joMultigrid(Hs,S,R,P,C,coarse_solver;
             Pf = P[i]
             Sf = S[i]
             coarse_solver = deepcopy(coarse_solver)
-            coarse_solver.tag = "CS lvl "*string(i)
             coarse_solver.precond = old_cs
             CS = solvesystem(Hc,coarse_solver)
-            if i==1
-                ret = :coarse
-            else
-                ret = :preS1
-            end
-            prepend!(coarse_solves,[(b,x,mode::Bool)->multigrid_vcycle(Hf,Sf,Rf,Pf,CS,b,x,forw_mode=mode,ret=ret)])
+            prepend!(coarse_solves,[(b,x,mode::Bool)->multigrid_vcycle(Hf,Sf,Rf,Pf,CS,b,x,forw_mode=mode)])
         end
         solver = coarse_solves[1]
         return joLinearFunctionFwdCT(n,n,
@@ -39,37 +34,16 @@ function joMultigrid(Hs,S,R,P,C,coarse_solver;
 
 end
 
-function multigrid_vcycle(H,S,R,P,C,b,x;forw_mode::Bool=true,ret::Symbol=:none)
-    if ret==:preS1
-        return x
-    end
+function multigrid_vcycle(H,S,R,P,C,b,x;forw_mode::Bool=true)
     xf = S(b,x,forw_mode)
-    if ret==:postS1
-        return x
-    end
     if forw_mode
         r = b-H*xf
     else
         r = b-H'*xf
     end
-    if ret==:r
-        return r
-    end
     xc = R*r
-    if ret==:xc
-        return xc
-    end
     xc = C(xc,zeros(xc),forw_mode)
-    if ret==:coarse
-        return xc
-    end
-    if ret==:Pxc
-        return P*xc
-    end
     xf .+= P*xc
-    if ret==:preS2
-        return xf
-    end
     xf = S(b,xf,forw_mode)
 end
 

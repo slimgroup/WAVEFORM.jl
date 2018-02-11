@@ -10,7 +10,8 @@ mutable struct LinSolveOpts
     maxit::Int64
     maxinnerit::Int64
     solver::Symbol
-    precond::Union{Symbol,Function,LinSolveOpts,joAbstractOperator}
+    #precond::Union{Symbol,Function,LinSolveOpts,joAbstractOperator}
+    precond::Any
     outputfreq::Int64
     tag::String
     function LinSolveOpts(;tol::Float64=1e-6,
@@ -68,7 +69,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
     end
 
     if lsopts.solver==:fgmres
-        (y,res) = FGMRES(A,b,x0,m=lsopts.maxinnerit,maxiter=lsopts.maxit,tol=lsopts.tol,precond=P,outputfreq=lsopts.outputfreq,tag=lsopts.tag)
+        (y,res) = FGMRES(A,b,x0,m=lsopts.maxinnerit,maxiter=lsopts.maxit,tol=lsopts.tol,precond=P,outputfreq=lsopts.outputfreq)
         return y
     elseif lsopts.solver==:lufact
         y = A\b
