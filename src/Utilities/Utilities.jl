@@ -63,10 +63,13 @@ function fine2coarse(n,d,d_sub...;interp_type::Symbol=:linear)
         c2f = joKron(interp_basis(linspace(0,1,n_sub[3]),linspace(0,1,n[3])),
                      interp_basis(linspace(0,1,n_sub[2]),linspace(0,1,n[2])),
                      interp_basis(linspace(0,1,n_sub[1]),linspace(0,1,n[1])))
-        f2c = c2f'
-        #f2c = joKron(interp_basis(linspace(0,1,n[3]),linspace(0,1,n_sub[3])),
-        #             interp_basis(linspace(0,1,n[2]),linspace(0,1,n_sub[2])),
-        #             interp_basis(linspace(0,1,n[1]),linspace(0,1,n_sub[1])))
+        if interp_type==:linear
+            f2c = c2f'
+        else
+            f2c = joKron(interp_basis(linspace(0,1,n[3]),linspace(0,1,n_sub[3])),
+                         interp_basis(linspace(0,1,n[2]),linspace(0,1,n_sub[2])),
+                         interp_basis(linspace(0,1,n[1]),linspace(0,1,n_sub[1])))
+        end
 
     else
         throw(ArgumentError("n must be 1, 2, or 3 dimensional"))
