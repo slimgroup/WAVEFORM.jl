@@ -119,7 +119,7 @@ function PDEfunc!(op::Symbol,
 
             # Wavefield solve
             U = H\q
-            sum_srcs = x->comp_to_phys*sum(real(x),2)
+            sum_srcs = x->real(comp_to_phys*sum(x,2))
             if op==:objective
                 #figure()
                 #imshow(real(Pr*U),aspect="auto")

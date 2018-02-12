@@ -3,5 +3,4 @@ using JOLI
 using Base.Test
 
 # write your own tests here
-include("testmatlab.jl")
-
+include("test_3D.jl")

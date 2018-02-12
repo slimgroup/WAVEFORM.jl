@@ -140,9 +140,9 @@ function get_pad_ext_ops(nt_nopml,npml,ndims)
         Pext = joKron(joExtend(nt_nopml[3],:border,pad_lower=npml[1,3],pad_upper=npml[2,3]),
                       joExtend(nt_nopml[2],:border,pad_lower=npml[1,2],pad_upper=npml[2,2]),
                       joExtend(nt_nopml[1],:border,pad_lower=npml[1,1],pad_upper=npml[2,1]))
-        Ppad = joKron(joExtend(nt_nopml[3],:zeros,pad_lower=npml[1,3],pad_upper=npml[2,3]),
-                      joExtend(nt_nopml[2],:zeros,pad_lower=npml[1,2],pad_upper=npml[2,2]),
-                      joExtend(nt_nopml[1],:zeros,pad_lower=npml[1,1],pad_upper=npml[2,1]))
+        Ppad = joKron(joExtend(nt_nopml[3],:zeros,pad_lower=npml[1,3],pad_upper=npml[2,3],DDT=Complex{Float64}),
+                      joExtend(nt_nopml[2],:zeros,pad_lower=npml[1,2],pad_upper=npml[2,2],DDT=Complex{Float64}),
+                      joExtend(nt_nopml[1],:zeros,pad_lower=npml[1,1],pad_upper=npml[2,1],DDT=Complex{Float64}))
     end
     return (Pext,Ppad)
 end
