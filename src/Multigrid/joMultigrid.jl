@@ -1,4 +1,4 @@
-export joMultigrid, multigrid_multiply
+export joMultigrid, multigrid_multiply, multigrid_vcycle
 
 
 function joMultigrid(Hs,S,R,P,C,coarse_solver;
