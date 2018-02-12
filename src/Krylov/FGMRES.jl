@@ -1,3 +1,5 @@
+export FGMRES
+
 function FGMRES(A,
                 b::AbstractVector{T},
                 x0::AbstractVector{T};
@@ -5,15 +7,11 @@ function FGMRES(A,
                 maxiter::Number=Inf,
                 precond=nothing,
                 tol::AbstractFloat=1e-6,
-                outputfreq::Integer=0,
-                tag::String="")::Tuple{Vector{T},Vector{Float64}} where {T<:Number}
+                outputfreq::Integer=0)::Tuple{Vector{T},Vector{Float64}} where {T<:Number}
 
     n = size(A,2)
-    if length(tag) > 0
-        println(tag * " start")
-    end
     size(A,1)==size(A,2) || throw(ArgumentError("A must be square"))
-    size(b,1)==n || throw(ArgumentError("A and b must have compatible dimensions"))
+    size(b,1)==n || throw(ArgumentError("A and b must have compatible dimensions, got size of A $(size(A,1)), size of b $(length(b))"))
     size(b,2)==1 || throw(ArgumentError("b must be a vector"))
     length(x0)==0 || length(x0)==n || throw(ArgumentErrror("x0 must be empty or a vector with size compatible with A"))
     if length(x0)==0 || norm(x0)<1e-10
@@ -61,10 +59,10 @@ function FGMRES(A,
         innerit = 1
         for k=1:m
             if prec_dirac
-                w .= A*(@view V[:,k])
+                w .= A*(V[:,k])
             else
-                Z[:,k] .= (P(@view V[:,k]))::Vector{T}
-                w .= A*(@view Z[:,k])
+                Z[:,k] .= (P(V[:,k]))::Vector{T}
+                w .= A*(Z[:,k])
             end
             for j=1:k
                 H[j,k] = dot((@view V[:,j]),w)
@@ -107,9 +105,6 @@ function FGMRES(A,
         if norm(r)/normr0<tol
             break
         end
-    end
-    if length(tag) > 0
-        println(tag * " end")
     end
     
     return (x,res)

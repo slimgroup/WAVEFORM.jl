@@ -48,7 +48,7 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
         prec_opts = lsopts.precond
 
         if prec_opts.solver==:fgmres
-            P = x->FGMRES(A,x,zeros(x),m=prec_opts.maxinnerit,maxit=prec_opts.maxit,tol=prec_opts.tol)
+            P = x->FGMRES(A,x,zeros(x),m=prec_opts.maxinnerit,maxit=prec_opts.maxit,tol=prec_opts.tol)[1]
         end
     elseif typeof(lsopts.precond)<:Function
         P = x->lsopts.precond(x,zeros(x),forw_mode)

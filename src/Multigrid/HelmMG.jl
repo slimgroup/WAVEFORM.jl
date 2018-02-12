@@ -24,7 +24,7 @@ function construct_helm_multigrid{I<:Integer,F<:AbstractFloat}(H,v::AbstractArra
         newopts.lsopts.precond = :identity
         newopts.comp_d = coarse_factor^i*dt_fine
         @. newopts.npml = round(Int64,ceil(float(pml_fine)/coarse_factor^i))
-        push!(S,solvesystem(H,smoother))
+        push!(S,solvesystem(Hs[i],smoother))
         (to_coarse,to_fine,ncoarse) = fine2coarse(nt_nopml_fine,newopts.comp_d/coarse_factor,newopts.comp_d,eltype(v),interp_type=:cubic)
 
         vcoarse = to_coarse*vec(v)
@@ -60,4 +60,5 @@ function MLGMRES{I<:Integer,F<:AbstractFloat}(H::joAbstractOperator,v::AbstractA
     nlevels = 3;
     (Hs,S,R,P,C) = construct_helm_multigrid(H,v,comp_grid,model,freq,opts,smoother,coarse_solver,nlevels,explicit_coarse_mat=false);
     M = joMultigrid(Hs,S,R,P,C,coarse_solver,recursive_vcycle=true)
+    #return (Hs,S,R,P,C, M)
 end
