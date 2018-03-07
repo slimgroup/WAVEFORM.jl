@@ -10,33 +10,35 @@ struct helm3d_params{T}
     xy_coef::T 
     xz_coef::T 
     yz_coef::T
-    px_lo::AbstractArray{Complex{T},1}
-    px_hi::AbstractArray{Complex{T},1}
-    px::AbstractArray{Complex{T},1}
-    py_lo::AbstractArray{Complex{T},1}
-    py_hi::AbstractArray{Complex{T},1}
-    py::AbstractArray{Complex{T},1}
-    pz_lo::AbstractArray{Complex{T},1}
-    pz_hi::AbstractArray{Complex{T},1} 
-    pz::AbstractArray{Complex{T},1}
+    px_lo::Array{Complex{T},1}
+    px_hi::Array{Complex{T},1}
+    px::Array{Complex{T},1}
+    py_lo::Array{Complex{T},1}
+    py_hi::Array{Complex{T},1}
+    py::Array{Complex{T},1}
+    pz_lo::Array{Complex{T},1}
+    pz_hi::Array{Complex{T},1} 
+    pz::Array{Complex{T},1}
 end
 
-function helm3d_operto_mvp_forw_impl!(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}}, x::AbstractArray{Complex{F},3}, y::AbstractArray{Complex{F},3}, n::AbstractArray{I,1}, params::helm3d_params{F}, deriv_mode::Bool, z_idx) where {F <: Real, I <: Integer}
+function helm3d_operto_mvp_forw_impl!(wn, x, y, n, params, deriv_mode, z_idx) 
     M, N, P = 1, 2, 3
-    wn_window = zeros(F,3,3,3)
-    coef = zeros(Complex{F},3,3,3)
-    x_window = zeros(Complex{F},3,3,3)
+    F = Float64
+    CF = Complex{Float64}
+    wn_window = zeros(eltype(wn),3,3,3)
+    coef = zeros(Complex{Float64},3,3,3)
+    x_window = zeros(Complex{Float64},3,3,3)
     zero_x = complex(0.0,0.0)
     zero_w = zero(eltype(wn))
     nx,ny,nz = n
-    is_deriv_mode = deriv_mode ? zero(eltype(zero_x)) : complex(1.0,0.0)
+    is_deriv_mode = deriv_mode ? complex(0.0,0.0) : complex(1.0,0.0)
     for k = z_idx 
-        cxz = params.xz_coef*params.pz[k]
-        cxzlo = params.xz_coef*params.pz_lo[k]
-        cxzhi = params.xz_coef*params.pz_hi[k]
-        cyz = params.yz_coef*params.pz[k]
-        cyzlo = params.yz_coef*params.pz_lo[k]
-        cyzhi = params.yz_coef*params.pz_hi[k]
+        cxz = (params.xz_coef*params.pz[k])
+        cxzlo = (params.xz_coef*params.pz_lo[k])
+        cxzhi = (params.xz_coef*params.pz_hi[k])
+        cyz = (params.yz_coef*params.pz[k])
+        cyzlo = (params.yz_coef*params.pz_lo[k])
+        cyzhi = (params.yz_coef*params.pz_hi[k])
         for j = 1:ny
             c1 = params.xy_coef*params.py[j] + cxz
             c2_lo = params.cy*params.py_lo[j] + cyz
@@ -132,7 +134,7 @@ function helm3d_operto_mvp_mt(wn::Union{AbstractArray{F,3},AbstractArray{Complex
 
     npxlo,npxhi,npylo,npyhi,npzlo,npzhi = npml[1,1],npml[2,1],npml[1,2],npml[2,2],npml[1,3],npml[2,3]
 
-    y = zeros(Complex{F},tuple(n...))
+    y = zeros(Complex{Float64},tuple(n...))
 
     # Create PML functions
     px_lo,px_hi = pml_func(nx,npxlo,npxhi)
@@ -170,7 +172,7 @@ function helm3d_operto_mvp_mt(wn::Union{AbstractArray{F,3},AbstractArray{Complex
     const wm2 = 0.07516874999999999
     const wm3 = 0.004373916666666667
     const wm4 = 5.690375e-7
-    w3a = 2*(w3*3/(4*hxyz))::F
+    w3a = 2*(w3*3/(4*hxyz))::Float64
 
     cx = - (w1/hx + w2/hx + w2/hxz + w2/hxy + 4*w3a)
     cy = - (w1/hy + w2/hy + w2/hyz + w2/hxy + 4*w3a)
@@ -180,7 +182,6 @@ function helm3d_operto_mvp_mt(wn::Union{AbstractArray{F,3},AbstractArray{Complex
     xz_coef = w2/(2*hxz)
     xy_coef = w2/(2*hxy)
     yz_coef = w2/(2*hyz)
-    y = zeros(Complex{F},nx,ny,nz)
     params = helm3d_params(w3a,wm2,wm3,wm4,cNNN,cx,cy,cz,xy_coef,xz_coef,yz_coef,px_lo,px_hi,px,py_lo,py_hi,py,pz_lo,pz_hi,pz)
     num_blocks = Threads.nthreads()
     block_size = Int(ceil(nz/num_blocks))
@@ -195,11 +196,7 @@ end
 
 function helm3d_operto_mvp(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2},x::AbstractArray{Complex{F},3};forw_mode::Bool=true,deriv_mode::Bool=false) where {F<:Real,I<:Integer}
 
-    """
-   helm3d_operto_mvp(wn,h,nt,npml,x,y,forw_mode,deriv_mode)
 
-   Curt Da Silva, 2016
-    """
     M,N,P = 1,2,3
 
     nx,ny,nz = n[1],n[2],n[3]
@@ -262,11 +259,10 @@ function helm3d_operto_mvp(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F}
     yz_coef = w2/(2*hyz)
     wn_window = zeros(F,3,3,3)
     coef = zeros(Complex{F},3,3,3)
-    x_window = zeros(Complex{F},3,3,3)
-    y = zeros(Complex{F},nx,ny,nz)
+    x_window = zeros(eltype(x),3,3,3)
     zero_x = complex(0.0,0.0)
     zero_w = zero(eltype(wn))
-    is_deriv_mode = deriv_mode ? zero(eltype(zero_x)) : complex(1.0,0.0)
+    is_deriv_mode = deriv_mode ? complex(0.0,0.0) : complex(1.0,0.0)
     if forw_mode
         for k = 1:nz
             cxz = xz_coef*pz[k]
