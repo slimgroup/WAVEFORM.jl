@@ -82,7 +82,7 @@ function helmholtz_system(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,
             if !opts.implicit_matrix
                 H = helm3d_operto_matrix(wn,dt,nt_pml,freq,npml)
             else
-                Hmvp = (x;forw=true)->helm3d_operto_mvp(wn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw)
+                Hmvp = (x;forw=true)->helm3d_operto_mvp_mt(wn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw)
                 H = joLinearFunctionFwdCT(N_system,N_system,x->Hmvp(x,forw=true),x->Hmvp(x,forw=false),Complex{F},Complex{F})
                 dHmvp = (x;forw=true)->helm3d_operto_mvp(dwn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw,deriv_mode=true)
                 dH = joLinearFunctionFwdCT(N_system,N_system,x->dHmvp(x,forw=true),x->dHmvp(x,forw=false),Complex{F},Complex{F})
