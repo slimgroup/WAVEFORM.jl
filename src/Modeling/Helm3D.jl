@@ -35,13 +35,14 @@ function helm3d_operto_mvp_forw_impl!(wn, x, y, n, params, deriv_mode)
         coef = zeros(Complex{Float64},3,3,3)
         x_window = zeros(Complex{Float64},3,3,3)
 
-        for k = z_idx
+        @inbounds for k = z_idx
             cxz = (params.xz_coef*params.pz[k])
             cxzlo = (params.xz_coef*params.pz_lo[k])
             cxzhi = (params.xz_coef*params.pz_hi[k])
             cyz = (params.yz_coef*params.pz[k])
             cyzlo = (params.yz_coef*params.pz_lo[k])
             cyzhi = (params.yz_coef*params.pz_hi[k])
+
             for j = 1:ny
                 c1 = params.xy_coef*params.py[j] + cxz
                 c2_lo = params.cy*params.py_lo[j] + cyz
@@ -72,11 +73,11 @@ function helm3d_operto_mvp_forw_impl!(wn, x, y, n, params, deriv_mode)
                             for ii=1:3
                                 load_x = i+ii-2 > 0 && i+ii-2<=nx;
                                 if load_x & load_y & load_z
-                                    @inbounds x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
-                                    @inbounds wn_window[ii,jj,kk] = wn[i+ii-2,j+jj-2,k+kk-2]
+                                    x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
+                                    wn_window[ii,jj,kk] = wn[i+ii-2,j+jj-2,k+kk-2]
                                 else
-                                    @inbounds x_window[ii,jj,kk] = zero_x
-                                    @inbounds wn_window[ii,jj,kk] = zero_w
+                                    x_window[ii,jj,kk] = zero_x
+                                    wn_window[ii,jj,kk] = zero_w
                                 end
                             end
                         end
@@ -110,11 +111,12 @@ function helm3d_operto_mvp_forw_impl!(wn, x, y, n, params, deriv_mode)
                     coef[P,P,M] = is_deriv_mode*(-params.w3a*(params.px_hi[i] + gyzHL)) - params.wm4 * wn_window[P,P,M]
                     coef[P,P,P] = is_deriv_mode*(-params.w3a*(params.px_hi[i] + gyzHH)) - params.wm4 * wn_window[P,P,P]
                     coef[N,N,N] = is_deriv_mode*(-params.cx*params.px[i] - params.cy*params.py[j] - params.cz*params.pz[k]) + params.cNNN*wn_window[N,N,N]
+
                     t = complex(0.0,0.0);
                     for kk=1:3
                         for jj=1:3
                             for ii=1:3
-                                @inbounds t += coef[ii,jj,kk]*x_window[ii,jj,kk];
+                                t += coef[ii,jj,kk]*x_window[ii,jj,kk];
                             end
                         end
                     end
@@ -140,7 +142,7 @@ function helm3d_operto_mvp_adj_impl!(wn, x, y, n, params, deriv_mode)
 
         # (i+1,j+1,k+1) is the current index for the current point
         # with respect to the pml functions
-        for k = z_idx
+        @inbounds for k = z_idx
             kM,kN,kP = k,k+1,k+2
             for j=1:ny
                 jM,jN,jP = j,j+1,j+2
@@ -153,13 +155,14 @@ function helm3d_operto_mvp_adj_impl!(wn, x, y, n, params, deriv_mode)
                             for ii=1:3
                                 load_x = i+ii-2 > 0 && i+ii-2<=nx;
                                 if load_x & load_y & load_z
-                                @inbounds x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
+                                    x_window[ii,jj,kk] = x[i+ii-2,j+jj-2,k+kk-2]
                                 else
-                                 @inbounds x_window[ii,jj,kk] = zero_x
+                                    x_window[ii,jj,kk] = zero_x
                                 end
                             end
                         end
                     end
+                    
                     iM,iN,iP = i,i+1,i+2
                     coef[M,M,M] = -params.wm4*wNNN + is_deriv_mode*(-params.w3a*(params.px_hi[iM] + params.py_hi[jM] + params.pz_hi[kM]))
                     coef[N,M,M] = -params.wm3*wNNN + is_deriv_mode*((-params.yz_coef) * (params.pz_hi[kM] + params.py_hi[jM]) + params.w3a*params.px[iN])
@@ -193,7 +196,7 @@ function helm3d_operto_mvp_adj_impl!(wn, x, y, n, params, deriv_mode)
                     for kk=1:3
                         for jj=1:3
                             for ii=1:3
-                                @inbounds t += conj(coef[ii,jj,kk])*x_window[ii,jj,kk];
+                                t += conj(coef[ii,jj,kk])*x_window[ii,jj,kk];
                             end
                         end
                     end
@@ -353,7 +356,7 @@ function helm3d_operto_mvp(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F}
 	        cyzlo = yz_coef*pz_lo[k]
 	        cyzhi = yz_coef*pz_hi[k]
             for j = 1:ny
-                c1 = xy_coef*py[j] + cxz
+                c1 = xy_coef*py[j] + cxz 
 		        c2_lo = cy*py_lo[j] + cyz
 		        c2_hi = cy*py_hi[j] + cyz
 		        c3_lo = yz_coef*py[j] + cz*pz_lo[k]
