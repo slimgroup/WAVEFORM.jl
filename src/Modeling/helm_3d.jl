@@ -1,3 +1,6 @@
+"""
+Constants for 27pt 3D Helmholtz matrix-vector product
+"""
 struct helm3d_params{T}
     w3a::T
     wm2::T
@@ -507,11 +510,7 @@ end
 
 
 function helm3d_operto_matrix(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F},3}},Δ::AbstractArray{F,1},n::AbstractArray{I,1},freq::Union{F,Complex{F}},npml::AbstractArray{I,2}) where {F<:Real,I<:Integer}
-    """
-    helm3d_operto_matrix(wn,h,nt,npml)
 
-    Curt Da Silva, 2016
-    """
     M,N,P = 1,2,3
 
     nx,ny,nz = n[1],n[2],n[3]

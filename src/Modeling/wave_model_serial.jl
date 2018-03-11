@@ -1,6 +1,4 @@
-using PyPlot
-
-export PDEfunc!
+export PDEfunc!, pdefunc_ops
 pdefunc_ops = [:objective,:field,:forw_model,:jacob_forw,:jacob_adj,:hess,:hess_gn]
 
 function PDEfunc!(op::Symbol,

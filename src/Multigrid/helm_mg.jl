@@ -53,7 +53,6 @@ function VGMRES(H::joAbstractOperator,v::AbstractArray{F,1},comp_grid::Computati
     M = joMultigrid(Hs,S,R,P,C,coarse_solver,recursive_vcycle=false)
 end
 
-
 function MLGMRES(H::joAbstractOperator,v::AbstractArray{F,1},comp_grid::ComputationalGrid{I,F},model::Model{I,F},freq::Union{F,Complex{F}},opts::PDEopts{I,F}) where {I<:Integer,F<:AbstractFloat}
     smoother = LinSolveOpts(solver=:fgmres,maxit=3,maxinnerit=5,precond=:identity);
     coarse_solver = LinSolveOpts(solver=:fgmres,maxit=3,maxinnerit=5,tol=0.5);

@@ -1,2 +1,2 @@
-include("FGMRES.jl")
-include("LinearSolver.jl")
+include("fgmres.jl")
+include("linear_solver.jl")

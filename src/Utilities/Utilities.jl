@@ -1,33 +1,34 @@
 export fine2coarse, partition
 
-# Generates interpolators from a fine grid to a coarse grid
-#
-# Usage:
-#   (f2c,c2f) = fine2coarse(n_fine,n_coarse,T)
-#
-# Inputs
-#    n_fine   - 1, 2, or 3 dimensional vector of fine grid sizes
-#    n_coarse - vector of coarse grid sizes (same dimensionality as n_fine)
-#    T        - vector data type
-#
-# Outputs
-#   f2c       - fine to coarse grid JOLI operator
-#   c2f       - coarse to fine grid JOLI operator
-#
-# Usage:
-#    (f2c,c2f,n_coarse) = fine2coarse(n_fine,d_fine,d_coarse,T)
-#
-# Inputs
-#    n_fine   - 1, 2, or 3 dimensional vector of fine grid sizes
-#    d_fine   - vector of fine grid spacings (same dimensionality as n_fine)
-#    d_coarse - vector of coarse grid spacings (same dimensionality as d_fine)
-#    T        - vector data type
-#
-# Outputs
-#   f2c       - fine to coarse grid JOLI operator
-#   c2f       - coarse to fine grid JOLI operator
-#   n_coarse  - vector of coarse grid sizes
+"""
+Generates interpolators from a fine grid to a coarse grid
 
+Usage:
+  (f2c,c2f) = fine2coarse(n_fine,n_coarse,T)
+
+Inputs
+   n_fine   - 1, 2, or 3 dimensional vector of fine grid sizes
+   n_coarse - vector of coarse grid sizes (same dimensionality as n_fine)
+   T        - vector data type
+
+Outputs
+  f2c       - fine to coarse grid JOLI operator
+  c2f       - coarse to fine grid JOLI operator
+
+Usage:
+   (f2c,c2f,n_coarse) = fine2coarse(n_fine,d_fine,d_coarse,T)
+
+Inputs
+   n_fine   - 1, 2, or 3 dimensional vector of fine grid sizes
+   d_fine   - vector of fine grid spacings (same dimensionality as n_fine)
+   d_coarse - vector of coarse grid spacings (same dimensionality as d_fine)
+   T        - vector data type
+
+Outputs
+  f2c       - fine to coarse grid JOLI operator
+  c2f       - coarse to fine grid JOLI operator
+  n_coarse  - vector of coarse grid sizes
+"""
 function fine2coarse(n,d,d_sub...;interp_type::Symbol=:linear)
 
     if length(d_sub)==1
@@ -77,21 +78,23 @@ function fine2coarse(n,d,d_sub...;interp_type::Symbol=:linear)
     return (f2c,c2f,n_sub)
 end
 
-# Partition the vector 1:N in to chunks of size P with a given overlap
-# Note, some combinations of N, P, overlap will not yield a partition that goes exactly
-# up to N, so a row with a possibly different overlap could be added to the end
-#
-# Usage:
-#   y = partition(N,P,overlap)
-#
-# Input:
-#   N       - number of elements
-#   P       - partition size
-#   overlap - number of elements to overlap
-#
-# Output:
-#   y       - matrix of indices of size P x # partitions
-#             each column correponds to a chunk of indices
+"""
+Partition the vector 1:N in to chunks of size P with a given overlap
+Note, some combinations of N, P, overlap will not yield a partition that goes exactly
+up to N, so a row with a possibly different overlap could be added to the end
+
+Usage:
+  y = partition(N,P,overlap)
+
+Input:
+  N       - number of elements
+  P       - partition size
+  overlap - number of elements to overlap
+
+Output:
+   y       - matrix of indices of size P x # partitions
+             each column correponds to a chunk of indices
+"""
 function partition(N,P,overlap)
     y = collect(1:P) .+ collect(0:(P-overlap):(N-P))'
     if maximum(y[:,end]) < N

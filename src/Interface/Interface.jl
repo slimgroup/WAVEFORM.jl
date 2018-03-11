@@ -1,2 +1,2 @@
-include("Misfit.jl")
-include("Modeling.jl")
+include("misfit.jl")
+include("modeling.jl")

@@ -1,2 +1,2 @@
-include("HelmMG.jl")
-include("joMultigrid.jl")
+include("helm_mg.jl")
+include("jo_multigrid.jl")
