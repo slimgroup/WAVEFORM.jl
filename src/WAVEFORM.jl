@@ -1,4 +1,4 @@
-module Waveform
+module WAVEFORM
 
 # package code goes here
 include("Operators/Operators.jl")
