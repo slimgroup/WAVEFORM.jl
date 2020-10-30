@@ -1254,7 +1254,7 @@ function pml_func(nx::Int,np_lo::Int,np_hi::Int)
     gamma = zeros(nx+2,1)
     gamma[1:np_lo] = cos.((pi*(0:np_lo-1) * s_hx)/(2*Lx_lo))
     gamma[np_lo+1:nx+2-np_hi] .= 0
-    gamma[nx+3-np_hi:nx+2] .= cos.((pi*(1-(nx+2-np_hi:nx+1)*s_hx))/(2*Lx_hi))
-    return 2.0 ./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[1:nx] )), 2.0 ./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[3:nx+2] ))
+    gamma[nx+3-np_hi:nx+2] .= cos.((pi .* (1 .- (nx+2 .- np_hi:nx+1) .* s_hx)) ./ (2*Lx_hi))
+    return 2.0 ./((1 .+ im*gamma[2:nx+1]).*(1 .+ im*gamma[2:nx+1] .+ 1 .+ im*gamma[1:nx] )), 2.0 ./((1 .+ im .* gamma[2:nx+1]) .* (1 .+ im.*gamma[2:nx+1] .+ 1 .+ im.*gamma[3:nx+2] ))
 
 end
