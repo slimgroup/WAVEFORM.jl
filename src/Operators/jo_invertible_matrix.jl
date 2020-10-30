@@ -10,7 +10,7 @@ function joInvertibleMatrix(A::AbstractMatrix{F};DDT::DataType=F,RDT::DataType=p
     forw_div = v->Q'*(U\(L\(P*(R.*v))))
     adj_div = v->conj(R).*(P'*(Lt\(Ut\(Q*v))))
     
-    return joLinearFunctionCT(n,n,
+    return joLinearFunction_A(n,n,
                               v->A*v,                               
                               v->A'*v,
                               forw_div,

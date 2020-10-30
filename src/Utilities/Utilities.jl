@@ -36,40 +36,40 @@ function fine2coarse(n,d,d_sub...;interp_type::Symbol=:linear)
         typeof(d_sub[1])==DataType || error("Third argument must be of type DataType")
         T = d_sub[1]
     elseif length(d_sub)==2
-        n_sub = ceil.(Int64,n.*d./d_sub[1])
+        n_sub = ceil.(Int64,n.*d  ./d_sub[1])
         typeof(d_sub[2])==DataType || error("Fourth argument must be of type DataType")
         T = d_sub[2]
     else
         throw(ArgumentError("Too many arguments"))
     end
     length(n)==length(n_sub) || throwArgumentError("n and n_sub must have the same length")
-    minimum(n./n_sub)>=1 || throw(ArgumentError("n_sub must be smaller than n elementwise"))
+    minimum(n ./n_sub)>=1 || throw(ArgumentError("n_sub must be smaller than n elementwise"))
     if interp_type==:linear
-        interp_basis = (xin,xout)->joLinInterp1D(xin,xout,T)
+        interp_basis = (xin,xout)->joLinInterp1D(collect(xin), collect(xout); DDT=T, RDT=T)
     elseif interp_type==:cubic
-        interp_basis = (xin,xout)->joLagrangeInterp1D(xin,xout,T)
+        interp_basis = (xin,xout)->joLagrangeInterp1D(xin, xout, T)
     else
         error("interp_type $(interp_type) must be :linear or :cubic")
     end
     ndims = length(n)
     if ndims==1
-        f2c = interp_basis(linspace(0,1,n),linspace(0,1,n_sub))
-        c2f = interp_basis(linspace(0,1,n_sub),linspace(0,1,n))
+        f2c = interp_basis(range(0,1,length=n),range(0,1,length=n_sub))
+        c2f = interp_basis(range(0,1,length=n_sub),range(0,1,length=n))
     elseif ndims==2
-        f2c = joKron(interp_basis(linspace(0,1,n[2]),linspace(0,1,n_sub[2])),
-                     interp_basis(linspace(0,1,n[1]),linspace(0,1,n_sub[1])))
-        c2f = joKron(interp_basis(linspace(0,1,n_sub[2]),linspace(0,1,n[2])),
-                     interp_basis(linspace(0,1,n_sub[1]),linspace(0,1,n[1])))
+        f2c = joKron(interp_basis(range(0,1,length=n[2]),range(0,1,length=n_sub[2])),
+                     interp_basis(range(0,1,length=n[1]),range(0,1,length=n_sub[1])))
+        c2f = joKron(interp_basis(range(0,1,length=n_sub[2]),range(0,1,length=n[2])),
+                     interp_basis(range(0,1,length=n_sub[1]),range(0,1,length=n[1])))
     elseif ndims==3
-        c2f = joKron(interp_basis(linspace(0,1,n_sub[3]),linspace(0,1,n[3])),
-                     interp_basis(linspace(0,1,n_sub[2]),linspace(0,1,n[2])),
-                     interp_basis(linspace(0,1,n_sub[1]),linspace(0,1,n[1])))
+        c2f = joKron(interp_basis(range(0,1,length=n_sub[3]),range(0,1,length=n[3])),
+                     interp_basis(range(0,1,length=n_sub[2]),range(0,1,length=n[2])),
+                     interp_basis(range(0,1,length=n_sub[1]),range(0,1,length=n[1])))
         if interp_type==:linear
             f2c = c2f'
         else
-            f2c = joKron(interp_basis(linspace(0,1,n[3]),linspace(0,1,n_sub[3])),
-                         interp_basis(linspace(0,1,n[2]),linspace(0,1,n_sub[2])),
-                         interp_basis(linspace(0,1,n[1]),linspace(0,1,n_sub[1])))
+            f2c = joKron(interp_basis(range(0,1,length=n[3]),range(0,1,length=n_sub[3])),
+                         interp_basis(range(0,1,length=n[2]),range(0,1,length=n_sub[2])),
+                         interp_basis(range(0,1,length=n[1]),range(0,1,length=n_sub[1])))
         end
 
     else

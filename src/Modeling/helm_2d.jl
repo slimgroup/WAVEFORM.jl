@@ -40,12 +40,12 @@ function helm2d_7pt(n,d,npml,freq,v,f0,unit::String)
 
   ez_up = ez(zg+0.5)
   ez_down = ez(zg-0.5)
-  dz = 1/Δz^2*spdiagm( (1./ez_down[2:end],-(1./ez_down+1./ez_up),1./ez_up[1:end-1]),(-1,0,1),nz,nz)
+  dz = 1/Δz^2*spdiagm( (1 ./ez_down[2:end],-(1 ./ez_down+1 ./ez_up),1 ./ez_up[1:end-1]),(-1,0,1),nz,nz)
   Dz = kron(spdiagm(ex(xg)),dz)
 
   ex_up = ex(xg+0.5)
   ex_down = ex(xg-0.5)
-  dx = 1/Δx^2*spdiagm((1./ex_down[2:end],-(1./ex_down+1./ex_up),1./ex_up[1:end-1]),(-1,0,1),nx,nx)
+  dx = 1/Δx^2*spdiagm((1 ./ex_down[2:end],-(1 ./ex_down+1 ./ex_up),1 ./ex_up[1:end-1]),(-1,0,1),nx,nx)
   Dx = kron(dx,spdiagm(ez(zg)))
   A = kron(spdiagm(ex(xg)),spdiagm(ez(zg)))
 
@@ -98,8 +98,8 @@ function helm2d_chen2013p(n,d,npml,freq,v,f0,unit::String)
 
     ex = pml_func1d(nx,npx,a0,f0,freq)
     ez = pml_func1d(nz,npz,a0,f0,freq)
-    A=(i,j)->ex(j)./ez(i)
-    B=(i,j)->ez(i)./ex(j)
+    A=(i,j)->ex(j) ./ez(i)
+    B=(i,j)->ez(i) ./ex(j)
     I = ["M","N","P"]
     Hcoef = Dict{String,Array{Complex{eltype(v)},2}}()
     NNcoef = (i,j) -> -b*(A(i+0.5,j) + A(i-0.5,j)+B(i,j+0.5)+B(i,j-0.5)) + c*k[i,j]
@@ -173,9 +173,9 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     ez_down = ez(zg-0.5)
     ex_up = ex(xg+0.5)
     ex_down = ex(xg-0.5)
-    lx = 1/Δx^2*spdiagm((1./ex_down[2:end],-(1./ex_down+1./ex_up),1./ex_up[1:end-1]),(-1,0,1),nx,nx)
+    lx = 1/Δx^2*spdiagm((1 ./ex_down[2:end],-(1 ./ex_down+1 ./ex_up),1 ./ex_up[1:end-1]),(-1,0,1),nx,nx)
     Lx = j->kron(lx,spdiagm(ez(zg+j)[offset_range(j,nz)],(j),nz,nz))
-    lz = 1/Δz^2*spdiagm((1./ez_down[2:end],-(1./ez_down+1./ez_up),1./ez_up[1:end-1]),(-1,0,1),nz,nz)
+    lz = 1/Δz^2*spdiagm((1 ./ez_down[2:end],-(1 ./ez_down+1 ./ez_up),1 ./ez_up[1:end-1]),(-1,0,1),nz,nz)
     Lz = j->kron(spdiagm(ex(xg+j)[offset_range(j,nx)],(j),nx,nx),lz)
 
     L = b*Lx(0) + (1-b)/2*(Lx(-1) + Lx(1)) + b*Lz(0) + (1-b)/2*(Lz(-1) + Lz(1))

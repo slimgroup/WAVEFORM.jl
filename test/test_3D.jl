@@ -1,8 +1,3 @@
-using JOLI
-using Revise
-using Waveform
-
-
 
 n = 100*[1;1;1];
 d = 10.0*[1;1;1];
@@ -17,8 +12,8 @@ unit = "m/s";
 xsrc = [(n.*d)[1]/2];
 ysrc = [(n.*d)[2]/2];
 zsrc = [100.0];
-xrec = linspace(0.0,(n.*d)[1]::Float64,n[1]);
-yrec = linspace(0.0,(n.*d)[2]::Float64,n[2]);
+xrec = range(0.0,(n.*d)[1]::Float64,length=n[1]);
+yrec = range(0.0,(n.*d)[2]::Float64,length=n[2]);
 zrec = [100.0];
 freqs = [freq];
 nsrc = length(xsrc)*length(ysrc)*length(zsrc);
@@ -30,11 +25,11 @@ comp_d = d;
 comp_o = o;
 npml = convert(Int,λ/minimum(comp_d))*ones(Int64,(2,3));
 npml = 30*ones(Int64,(2,3));
-scheme = Waveform.helm3d_operto27;
+scheme = WAVEFORM.helm3d_operto27;
 cut_pml = true;
 implicit_matrix = true;
 srcfreqmask = trues(nsrc,nfreq);
-misfit = Waveform.least_squares;
+misfit = WAVEFORM.least_squares;
 lsopts = LinSolveOpts(solver=:fgmres,maxinnerit=5,tol=1e-6);
 lsopts.precond = :mlgmres;
 opts = PDEopts{Int64,Float64}(scheme,comp_n,comp_d,comp_o,cut_pml,implicit_matrix,npml,misfit,srcfreqmask,lsopts);
@@ -73,8 +68,8 @@ n = 50*[1;1;1];
 xsrc = [(n.*d)[1]/2];
 ysrc = [(n.*d)[2]/2];
 zsrc = [100.0];
-xrec = linspace(0.0,(n.*d)[1]::Float64,n[1]);
-yrec = linspace(0.0,(n.*d)[2]::Float64,n[2]);
+xrec = range(0.0,(n.*d)[1]::Float64,length=n[1]);
+yrec = range(0.0,(n.*d)[2]::Float64,length=n[2]);
 zrec = [100.0];
 freqs = [freq];
 nsrc = length(xsrc)*length(ysrc)*length(zsrc);
@@ -86,11 +81,11 @@ comp_d = d;
 comp_o = o;
 npml = convert(Int,λ/minimum(comp_d))*ones(Int64,(2,3));
 npml = 10*ones(Int64,(2,3));
-scheme = Waveform.helm3d_operto27;
+scheme = WAVEFORM.helm3d_operto27;
 cut_pml = true;
 implicit_matrix = true;
 srcfreqmask = trues(nsrc,nfreq);
-misfit = Waveform.least_squares;
+misfit = WAVEFORM.least_squares;
 lsopts = LinSolveOpts(solver=:fgmres,maxinnerit=5,tol=1e-10);
 lsopts.precond = :mlgmres;
 opts = PDEopts{Int64,Float64}(scheme,comp_n,comp_d,comp_o,cut_pml,implicit_matrix,npml,misfit,srcfreqmask,lsopts);

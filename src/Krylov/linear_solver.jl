@@ -33,7 +33,7 @@ end
 #
 function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
     if length(x0)==0
-        x0 = zeros(b)
+        x0 = similar(b)
     end
     size(op,1)==size(op,2) || throw(ArgumentError("A must be square"))
     size(b,1)==size(op,1) || throw(ArgumentError("b has $(size(b,1)) elements, op is $(size(op,1)) x $(size(op,2))"))
@@ -48,10 +48,10 @@ function linearsolve(op,b,x0,lsopts::LinSolveOpts;forw_mode::Bool=true)
         prec_opts = lsopts.precond
 
         if prec_opts.solver==:fgmres
-            P = x->FGMRES(A,x,zeros(x),m=prec_opts.maxinnerit,maxit=prec_opts.maxit,tol=prec_opts.tol)[1]
+            P = x->FGMRES(A,x,similar(x),m=prec_opts.maxinnerit,maxit=prec_opts.maxit,tol=prec_opts.tol)[1]
         end
     elseif typeof(lsopts.precond)<:Function
-        P = x->lsopts.precond(x,zeros(x),forw_mode)
+        P = x->lsopts.precond(x,similar(x),forw_mode)
     elseif typeof(lsopts.precond)==Symbol
         if lsopts.precond==:identity
             P = nothing

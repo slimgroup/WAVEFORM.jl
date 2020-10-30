@@ -254,13 +254,13 @@ function helm3d_operto_mvp_mt(wn,Δ,n,freq,npml,x; forw_mode::Bool=true, deriv_m
     pz = pz_lo+pz_hi
 
     # Weights
-    const w1  = 1.8395262e-5
-    const w2  = 0.29669233333333334
-    const w3  = 0.02747615
-    const wm1 = 0.49649658
-    const wm2 = 0.07516874999999999
-    const wm3 = 0.004373916666666667
-    const wm4 = 5.690375e-7
+    w1  = 1.8395262e-5
+    w2  = 0.29669233333333334
+    w3  = 0.02747615
+    wm1 = 0.49649658
+    wm2 = 0.07516874999999999
+    wm3 = 0.004373916666666667
+    wm4 = 5.690375e-7
     w3a = 2*(w3*3/(4*hxyz))
 
     cx = - (w1/hx + w2/hx + w2/hxz + w2/hxy + 4*w3a)
@@ -327,13 +327,13 @@ function helm3d_operto_mvp(wn::Union{AbstractArray{F,3},AbstractArray{Complex{F}
     pz = pz_lo+pz_hi
 
     # Weights
-    const w1  = 1.8395262e-5
-    const w2  = 0.29669233333333334
-    const w3  = 0.02747615
-    const wm1 = 0.49649658
-    const wm2 = 0.07516874999999999
-    const wm3 = 0.004373916666666667
-    const wm4 = 5.690375e-7
+    w1  = 1.8395262e-5
+    w2  = 0.29669233333333334
+    w3  = 0.02747615
+    wm1 = 0.49649658
+    wm2 = 0.07516874999999999
+    wm3 = 0.004373916666666667
+    wm4 = 5.690375e-7
     w3a = 2*(w3*3/(4*hxyz))::F
 
     cx = - (w1/hx + w2/hx + w2/hxz + w2/hxy + 4*w3a)
@@ -555,15 +555,15 @@ function helm3d_operto_matrix(wn::Union{AbstractArray{F,3},AbstractArray{Complex
     coef = zeros(Complex{F},3,3,3,nx,ny,nz)
 
     for k = 1:nz
-        ks = (k > 1)? -1 : 0
-        ke = (k < nz)? 1 : 0
+        ks = (k > 1) ? -1 : 0
+        ke = (k < nz) ? 1 : 0
         zoff = ks:ke
         for j = 1:ny
-            js = (j > 1)? -1 : 0
-            je = (j < ny)? 1 : 0
+            js = (j > 1) ? -1 : 0
+            je = (j < ny) ? 1 : 0
             yoff = js:je
             for i = 1:nx
-                is = (i > 1)? -1 : 0
+                is = (i > 1) ? -1 : 0
                 ie = (i < nx) ? 1 : 0
                 xoff = is:ie
                 # Load wn_window
@@ -992,7 +992,7 @@ function helm3d_chen2012_27pt(v::Union{AbstractArray{F,3},AbstractArray{Complex{
                 coef[P,P,N] = γ2*hx_isq*ξxNplus*ξyP*ξzN/4 + γ2*hy_isq*ξxP*ξyNplus*ξzN/4 - γ3*hz_isq*ξxP*ξyP*ξzNminus/4 - γ3*hz_isq*ξxP*ξyP*ξzNplus/4 + k_sq[P,P,N]*w3*ξxP*ξyP*ξzN/12
                 coef[P,P,P] = γ3*hx_isq*ξxNplus*ξyP*ξzP/4 + γ3*hy_isq*ξxP*ξyNplus*ξzP/4 + γ3*hz_isq*ξxP*ξyP*ξzNplus/4 + k_sq[P,P,P]*w4*ξxP*ξyP*ξzP/8
 
-                y[i,j,k] = (vec(coef).'vec(x_window))[1]
+                y[i,j,k] = dot(coef, x_window)
 end
 end
 end
@@ -1253,8 +1253,8 @@ function pml_func(nx::Int,np_lo::Int,np_hi::Int)
     Lx_lo = np_lo/nx
     gamma = zeros(nx+2,1)
     gamma[1:np_lo] = cos.((pi*(0:np_lo-1) * s_hx)/(2*Lx_lo))
-    gamma[np_lo+1:nx+2-np_hi] = 0
-    gamma[nx+3-np_hi:nx+2] = cos.((pi*(1-(nx+2-np_hi:nx+1)*s_hx))/(2*Lx_hi))
-    return 2.0./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[1:nx] )), 2.0./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[3:nx+2] ))
+    gamma[np_lo+1:nx+2-np_hi] .= 0
+    gamma[nx+3-np_hi:nx+2] .= cos.((pi*(1-(nx+2-np_hi:nx+1)*s_hx))/(2*Lx_hi))
+    return 2.0 ./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[1:nx] )), 2.0 ./((1 + im*gamma[2:nx+1]).*(1 + im*gamma[2:nx+1] + 1 + im*gamma[3:nx+2] ))
 
 end

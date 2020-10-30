@@ -9,7 +9,7 @@ function construct_helm_multigrid(H,v::AbstractArray{F,1},
         coarse_solver::LinSolveOpts,nlevels::I; explicit_coarse_mat::Bool=false) where {I<:Integer,F<:AbstractFloat}
 
     coarse_factor = 2
-    Hs = Array{ANY,1}()
+    Hs = Array{Any,1}()
     push!(Hs,H)
     S = Array{Function,1}()
     R = Array{joAbstractOperator,1}()

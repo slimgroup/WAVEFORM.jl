@@ -12,7 +12,7 @@ end
 function fwi_wavelet(freqs::AbstractArray{F,1},t0::F,f0::F) where {F<:Real}
     w = exp.(-2*π*im*t0*freqs)
     if f0 > 0
-        @. w = freqs^2 * exp(-(freqs./f0)^2)*w
+        @. w = freqs^2 * exp(-(freqs ./ f0)^2)*w
     end
     return w
 end

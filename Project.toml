@@ -1,0 +1,11 @@
+name = "WAVEFORM"
+uuid = "0ed47045-eb1d-415e-8916-3775a20d6a73"
+authors = ["mloubout <mathias.louboutin@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+JOLI = "bb331ad6-a1cf-11e9-23da-9bcb53c69f6f"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

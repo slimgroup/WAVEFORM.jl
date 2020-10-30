@@ -41,11 +41,11 @@ function FGMRES(A,
     res = Array{Float64,1}()
     push!(res,1.0)
     it_counter = 1
-    V = Matrix{T}(n,m+1)
+    V = Matrix{T}(undef, n,m+1)
     if prec_dirac
-        Z = Matrix{T}(n,0)
+        Z = Matrix{T}(undef, n,0)
     else
-        Z = Matrix{T}(n,m+1)
+        Z = Matrix{T}(undef, n,m+1)
     end    
     H = zeros(T,m+1,m)
     y = zeros(T,m)
