@@ -4,11 +4,13 @@
 
 using JOLI   # Linear operators
 using PyPlot # For plotting
-using Waveform
+using WAVEFORM
+using LinearAlgebra, Statistics
+using JUDI.SLIM_optim
 
 # Turn off annoying JOLI type checks
-JOLI.jo_type_mismatch_error_set(false)
-JOLI.jo_type_mismatch_warn_set(false)
+#JOLI.jo_type_mismatch_error_set(false)
+#JOLI.jo_type_mismatch_warn_set(false)
 
 # number of model points in each direction (z,x)
 n = 101*[1;1];
@@ -57,15 +59,14 @@ comp_o = o;
 npml = 20*ones(Int64,2,2);
 
 # Stencil used to discretize the PDE
-pde_scheme = helm2d_chen9p;
+pde_scheme = WAVEFORM.helm2d_chen9p;
 
 # If true, 
 cut_pml = true;
-
 implicit_matrix = false;
 
 # Objective function
-misfit = least_squares;
+misfit = WAVEFORM.least_squares;
 
 # Binary mask to indicate which sources/frequencies to use (default: all of them)
 srcfreqmask = trues(nsrc,nfreq);
@@ -80,23 +81,25 @@ opts = PDEopts{Int64,Float64}(pde_scheme,comp_n,comp_d,comp_o,cut_pml,implicit_m
 
 v0 = vel_background*ones(n...); 
 v = copy(v0);
-v[div(n[1],3):2*div(n[1],3),div(n[2],3):2*div(n[2],3)] = 1.25*vel_background;
+v[div(n[1],3):2*div(n[1],3),div(n[2],3):2*div(n[2],3)] .= 1.25*vel_background;
 v = vec(v);
 v0 = vec(v0);
 
 # True velocity
-imshow(v);
+imshow(reshape(v, model.n...), vmin=minimum(v),vmax=maximum(v));
 
-Q = eye(nsrc);
+Q = Matrix{Float64}(I, nsrc, nsrc);
 D = forw_model(v,Q,model,opts);
 
 
 # Plot a frequency slice
 imshow(real(D[:,1:nsrc]),aspect="auto");
 
-obj! = construct_pde_misfit(v,Q,D,model,opts,batch_mode=false)
+obj_func = construct_pde_misfit(v,Q,D,model,opts,batch_mode=false)
 
-using OptimPackNextGen
-proj! = (xproj,x)->project_bounds!(x,minimum(v),maximum(v),xproj);
-vest = spg(obj!,proj!,v0,3,maxfc=50,verb=true)
-imshow(reshape(vest,model.n...),vmin=minimum(v),vmax=maximum(v))
+g = zeros(length(v))
+obj(x) = (f = obj_func(x, g); return f, 1f2.*g)
+ProjBound(x) = median([minimum(v).*ones(length(v)) x maximum(v).*ones(length(v))]; dims=2)
+
+vest = minConf_SPG(obj,vec(v0), ProjBound,spg_options(verbose=3, maxIter=100))
+imshow(reshape(vest.sol,model.n...),vmin=minimum(v),vmax=maximum(v))

@@ -1,4 +1,11 @@
-export fine2coarse, partition
+export fine2coarse, partition, ind2sub, sub2ind
+
+"""
+ind2sub and sub2ind wrappers
+"""
+
+ind2sub(shape, indices) = Tuple.(CartesianIndices(shape)[indices])
+sub2ind(shape, indices) = LinearIndices(shape)[CartesianIndex.(indices)]
 
 """
 Generates interpolators from a fine grid to a coarse grid

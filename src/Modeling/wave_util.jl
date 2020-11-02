@@ -20,9 +20,9 @@ end
 # Convert odn coordinates to their full grid coordinates
 function odn_to_grid(o::AbstractArray{F,1},d::AbstractArray{F,1},n::AbstractArray{I,1}) where {F<:AbstractFloat, I<:Integer}
     (length(o)==length(d) && length(o)==length(n)) || throw(Exception("o,d,n must have the same length"))
-    x = Array{StepRangeLen,1}(length(o))
+    x = Array{StepRangeLen,1}(undef, length(o))
     for i in 1:length(o)
-        x[i] = o[i] + (0:(n[i]-1))*d[i]
+        x[i] = o[i] .+ (0:(n[i]-1))*d[i]
     end
     return tuple(x...)
 end

@@ -8,8 +8,8 @@ function PDEfunc!(op::Symbol,
                   input::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
                   model::Model{I,F},
                   opts::PDEopts{I,F};
-                  grad::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}}=Array{F}(0),
-                  srcfreqmask::AbstractArray{Bool,2}=Array{Bool}(0,0)) where {F<:AbstractFloat,I<:Integer}
+                  grad::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}}=Array{F}(undef,0),
+                  srcfreqmask::AbstractArray{Bool,2}=Array{Bool}(undef,0,0)) where {F<:AbstractFloat,I<:Integer}
 
     op in pdefunc_ops || error("Unrecognized op $op, must be one of $pdefunc_ops")
     nsrc = length(model.xsrc)*length(model.ysrc)*length(model.zsrc)
@@ -20,10 +20,10 @@ function PDEfunc!(op::Symbol,
         srcfreqmask = trues(nsrc,nfreq)
     end
     size(srcfreqmask,1)==nsrc && size(srcfreqmask,2)==nfreq || error("srcfreqmask must be a nsrc x nfreq matrix")
-    Iactive = find(srcfreqmask)
+    Iactive = findall(srcfreqmask)
     npde_out = length(Iactive)
-    (iS,iF) = ind2sub((nsrc,nfreq),Iactive)
-    freqsxsy = Array{Array{I,1},1}(nfreq)
+    (iS,iF) = ind2sub((nsrc,nfreq), Iactive)
+    freqsxsy = Array{Union{Tuple{I}, Nothing},1}(undef, nfreq)
 
     numcompsrc = (length(model.n)==2||model.n[3]==1) ? nsrc : 1
     length(Dobs)==0 || length(Dobs)==nrec*npde_out || error("Dobs must be a nrec*npde_out length vector")
@@ -40,11 +40,11 @@ function PDEfunc!(op::Symbol,
         throw(Exception("Q must be nsrc x nsrc or nsrc x nsrc x nfreq"))
     end
     for i in 1:nfreq
-        J = find(iF.==i)
+        J = findall(iF.==i)
         if !isempty(J)
             freqsxsy[i] = iS[J]
         else
-            freqsxsy[i] = Array{I,1}()
+            freqsxsy[i] = nothing
         end
     end
 
@@ -84,13 +84,12 @@ function PDEfunc!(op::Symbol,
     freq_idx = 0
     for k in 1:nfreq
 
-        if isempty(freqsxsy[k])
-            continue
-        end
+        isnothing(freqsxsy[k]) && continue
+
         freq_idx = freq_idx+1
         freq = freqs[k]
         isrc = freqsxsy[k]
-
+        
         src_batches = index_block(isrc,numcompsrc)
 
         (H,comp_grid,T,DT_adj) = helmholtz_system(v,model,freq,opts)
@@ -100,10 +99,10 @@ function PDEfunc!(op::Symbol,
         if op in [:jacob_forw :hess_gn :hess]
             δm = phys_to_comp*input;
         end
-
+        
         for j in 1:length(src_batches)
 
-            current_src_idx = src_batches[j]
+            current_src_idx = [s for s in src_batches[j]]
             # Scaling so that the wavefield amplitudes are the same for different grid spacings
             if ndims(Q)==3
                 q = Q[:,current_src_idx,k]
@@ -126,7 +125,7 @@ function PDEfunc!(op::Symbol,
                 f += ϕ
                 if compute_grad
                     V = H'\(-(Pr'*δϕ))
-                    grad .+= squeeze(sum_srcs(T(U)'*V),2)
+                    grad .+= dropdims(sum_srcs(T(U)'*V), dims=2)
                 end
             elseif op==:field
                 output[:,data_idx] = U
@@ -165,7 +164,7 @@ function src_rec_interp_operators(model::Model{I,F},comp_grid::ComputationalGrid
     kaiser_window_param = 4
     DT = Complex{F}
     RT = Complex{F}
-    opS(x,y) = joSincInterp(x,y,DomainT=DT,RangeT=RT)
+    opS(x,y) = joSincInterp(x,y,DDT=DT,RDT=RT)
     if ndims==2
         (zt,xt) = odn_to_grid(comp_grid)
         Ps = joKron(opS(model.xsrc,xt),opS(model.zsrc,zt))
