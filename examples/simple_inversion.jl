@@ -51,7 +51,8 @@ zrec = [950.0];
 
 # Model type containing the domain geometry
 model = Model{Int64,Float64}(n,d,o,t0,f0,unit,freqs,xsrc,ysrc,zsrc,xrec,yrec,zrec);
-nsrc = length(model.xsrc); nfreq = length(model.freq);
+nsrc = length(model.xsrc)
+nfreq = length(model.freq)
 
 comp_n = n;
 comp_d = d;
@@ -98,8 +99,8 @@ imshow(real(D[:,1:nsrc]),aspect="auto");
 obj_func = construct_pde_misfit(v,Q,D,model,opts,batch_mode=false)
 
 g = zeros(length(v))
-obj(x) = (f = obj_func(x, g); return f, 1f2.*g)
+obj(x) = (f = obj_func(x, g); return f, g)
 ProjBound(x) = median([minimum(v).*ones(length(v)) x maximum(v).*ones(length(v))]; dims=2)
 
-vest = minConf_SPG(obj,vec(v0), ProjBound,spg_options(verbose=3, maxIter=100))
+vest = minConf_SPG(obj,vec(v0), ProjBound,spg_options(verbose=3, maxIter=20))
 imshow(reshape(vest.sol,model.n...),vmin=minimum(v),vmax=maximum(v))

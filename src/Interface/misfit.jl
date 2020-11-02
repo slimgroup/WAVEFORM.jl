@@ -3,10 +3,10 @@ export construct_pde_misfit
 function construct_pde_misfit(v,Q,D,model,opts;batch_mode::Bool=false)
     nsrc = length(model.xsrc)*length(model.ysrc)*length(model.zsrc)
     nfreq = length(model.freq)
-    sf_mask = findall(opts.srcfreqmask)
+    sf_mask = findall(vec(opts.srcfreqmask))
 
     if length(sf_mask) < nsrc*nfreq
-        D1 = view(D,:,sf_mask)
+        D1 = view(D, :, sf_mask)
     else
         D1 = D
     end
@@ -33,13 +33,13 @@ function misfit_func!(v,Q,D,model,opts,I,g)
     sfmask = falses(nsrc,nfreq)
     sfmask[Ifixed[I]] .= true
     if length(I)<length(Ifixed)
-        Dobs = D[:,find(sfmask)]
+        Dobs = D[:,findall(vec(sfmask))]
     else
         Dobs = D
     end
     c = 1/length(I)
     f = PDEfunc!(:objective,v,Q,Dobs,Null,model,opts,grad=g,srcfreqmask=sfmask)
     f = c*f
-    @. g = c*g
+    g .*= c
     return f
 end

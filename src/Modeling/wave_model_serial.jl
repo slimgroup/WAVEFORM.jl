@@ -22,8 +22,9 @@ function PDEfunc!(op::Symbol,
     size(srcfreqmask,1)==nsrc && size(srcfreqmask,2)==nfreq || error("srcfreqmask must be a nsrc x nfreq matrix")
     Iactive = findall(srcfreqmask)
     npde_out = length(Iactive)
-    (iS,iF) = ind2sub((nsrc,nfreq), Iactive)
-    freqsxsy = Array{Union{Tuple{I}, Nothing},1}(undef, nfreq)
+    (iS, iF) = ind2sub((nsrc, nfreq), Iactive)
+    
+    freqsxsy = Array{Array{I, 1},1}(undef, nfreq)
 
     numcompsrc = (length(model.n)==2||model.n[3]==1) ? nsrc : 1
     length(Dobs)==0 || length(Dobs)==nrec*npde_out || error("Dobs must be a nrec*npde_out length vector")
@@ -44,7 +45,7 @@ function PDEfunc!(op::Symbol,
         if !isempty(J)
             freqsxsy[i] = iS[J]
         else
-            freqsxsy[i] = nothing
+            freqsxsy[i] = Array{I}(undef, 0)
         end
     end
 
