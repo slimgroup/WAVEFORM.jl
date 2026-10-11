@@ -1,16 +1,11 @@
 function joInvertibleMatrix(A::AbstractMatrix{F};DDT::DataType=F,RDT::DataType=promote_type(F,DDT)) where {F<:Number}
     (m,n) = size(A)
     m==n || throw(ArgumentError("A must be square"))
-    T = lufact(A);
-    (L,U,p,q,R) = T[:(:)];
-    P = joPermutation(p,DDT=DDT)
-    Q = joPermutation(q,DDT=DDT)
-    Ut = U'
-    Lt = L'
-    forw_div = v->Q'*(U\(L\(P*(R.*v))))
-    adj_div = v->conj(R).*(P'*(Lt\(Ut\(Q*v))))
-    
-    return joLinearFunctionCT(n,n,
+    T = lu(A)
+    forw_div = v->T\v
+    adj_div = v->T'\v
+
+    return joLinearFunction_A(n,n,
                               v->A*v,                               
                               v->A'*v,
                               forw_div,

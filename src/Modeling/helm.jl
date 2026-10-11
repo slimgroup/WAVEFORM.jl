@@ -1,5 +1,3 @@
-using JOLI
-
 export helmholtz_system, ComputationalGrid, odn_to_grid
 
 mutable struct ComputationalGrid{I<:Integer,F<:AbstractFloat}
@@ -37,7 +35,7 @@ function helmholtz_system(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,
         throw(ArgumentError())
     end
     npml = convert(Array{I,1},ceil.(vmax./(real(freq)*dt)))
-    npml = repmat(npml',2,1)
+    npml = repeat(npml',2,1)
     npml = min.(npml,opts.npml)
     # npml is a 2x3 matrix corresponding to
     # in 2D
@@ -49,7 +47,7 @@ function helmholtz_system(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,
     # [ #pml pts upper x  | # pml pts upper y  | # pml pts upper z ]
 
     nt_nopml = opts.comp_n
-    nt_pml = nt_nopml + sum(npml,1)'
+    nt_pml = nt_nopml + vec(sum(npml,dims=1))
     nt_pml = vec(nt_pml)
     ot_pml = opts.comp_o - vec(npml[1,:]) .* vec(dt)
     (Pext,Ppad) = get_pad_ext_ops(nt_nopml,npml,ndims)
@@ -68,7 +66,7 @@ function helmholtz_system(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,
         if opts.pde_scheme==helm2d_chen9p
             (H,dH,ddH) = helm2d_chen2013(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
         elseif opts.pde_scheme==helm2d_std7
-            (H,dH,ddH) = helm2d_std7(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
+            (H,dH,ddH) = helm2d_7pt(nt_pml,dt,npml,freq,v_pml,model.f0,model.unit)
         end
         if lsopts.solver==:lufact
             opH = joInvertibleMatrix(H)
@@ -83,11 +81,11 @@ function helmholtz_system(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,
                 H = helm3d_operto_matrix(wn,dt,nt_pml,freq,npml)
             else
                 Hmvp = (x;forw=true)->helm3d_operto_mvp_mt(wn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw)
-                H = joLinearFunctionFwdCT(N_system,N_system,x->Hmvp(x,forw=true),x->Hmvp(x,forw=false),Complex{F},Complex{F})
+                H = joLinearFunctionFwd_A(N_system,N_system,x->Hmvp(x,forw=true),x->Hmvp(x,forw=false),Complex{F},Complex{F})
                 dHmvp = (x;forw=true)->helm3d_operto_mvp(dwn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw,deriv_mode=true)
-                dH = joLinearFunctionFwdCT(N_system,N_system,x->dHmvp(x,forw=true),x->dHmvp(x,forw=false),Complex{F},Complex{F})
+                dH = joLinearFunctionFwd_A(N_system,N_system,x->dHmvp(x,forw=true),x->dHmvp(x,forw=false),Complex{F},Complex{F})
                 ddHmvp = (x;forw=true)->helm3d_operto_mvp(ddwn,dt,nt_pml,freq,npml,reshape(x,nt_pml...),forw_mode=forw,deriv_mode=true)
-                ddH = joLinearFunctionFwdCT(N_system,N_system,x->ddHmvp(x,forw=true),x->ddHmvp(x,forw=false),Complex{F},Complex{F})
+                ddH = joLinearFunctionFwd_A(N_system,N_system,x->ddHmvp(x,forw=true),x->ddHmvp(x,forw=false),Complex{F},Complex{F})
             end
 
         elseif opts.pde_scheme==helm3d_std9
@@ -105,7 +103,7 @@ function helmholtz_system(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,
             opH = joInvertibleMatrix(H)
         else
             if opts.implicit_matrix
-                  opH = joLinearFunctionCT(N_system,N_system,
+                  opH = joLinearFunction_A(N_system,N_system,
                                          x->Hmvp(x,forw=true),
                                          x->Hmvp(x,forw=false),
                                          x->linearsolve(H,x,[],lsopts,forw_mode=true),
@@ -117,12 +115,13 @@ function helmholtz_system(v::AbstractArray{F,1},model::Model{I,F},freq::Union{F,
         end
     end
 
-    T = u-> joLinearFunctionFwdCT( N_system,N_system,
+    T = u-> joLinearFunctionFwd_A( N_system,N_system,
                                   dm->dH*(dm.*u),
                                   z->real(conj(u).*(dH'*z)),F,Complex{F},fMVok=true)
-    DTadj = (u,dm,du)->joLinearFunctionFwdT(prod(nt_pml),prod(nt_pml),
+    DTadj = (u,dm,du)->joLinearFunctionFwd_T(prod(nt_pml),prod(nt_pml),
                                             z->real(conj(u).*(dm.*(ddH'*z)) + conj(du).*(dH'*z)),
-                                            @joNF,F,Complex{F},fMVok=true)
+                                            z->throw(ArgumentError("transpose of DTadj is not implemented")),
+                                            Complex{F},F,fMVok=true)
 
     return (opH,comp_grid,T,DTadj,P)
 end

@@ -11,13 +11,32 @@ For more details, as well as the full design of the software, see (https://arxiv
 
 Installation
 ------------
-In the Julia terminal, type
+Requires Julia 1.11 or newer (tested on 1.12 and 1.13). This package is not registered; from a clone of this repository:
 ```
-Pkg.clone("git@github.com:slimgroup/JOLI.jl.git")
-Pkg.clone("git@github.com:slimgroup/WAVEFORM.jl.git")
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+```
+JOLI (installed automatically from the General registry) uses PythonCall, which installs a private Python through CondaPkg on first load. `CondaPkg.toml` caps Python below 3.15, which PythonCall cannot load yet.
+
+If your global Julia environment contains packages with conflicting CondaPkg requirements, CondaPkg merges them in and the Python install can fail. In that case run with `JULIA_LOAD_PATH="@:@stdlib"` to keep the global environment out of the load path.
+
+Run the tests with
+```
+julia -t auto --project=. -e 'using Pkg; Pkg.test()'
 ```
 
 Examples
 --------
-Examples can be run from the examples/ directory. Currently there are only non-distributed examples available, but that will change in future updates.
+The `examples/` directory has its own environment, which adds PythonPlot for plotting and OptimPackNextGen for the SPG optimizer. OptimPackNextGen is not in the General registry and is pulled from GitHub through `[sources]`:
+```
+cd examples
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --project=. simple_inversion.jl
+julia -t auto --project=. -e 'using IJulia; notebook(dir=".")'   # for the notebooks, if IJulia is installed
+```
+Only non-distributed examples are available.
 
+Notes
+-----
+- The 2D stencils use the exp(+iωt) time convention (outgoing waves ~ conj(H0(kr))), while the 3D 27-point stencil uses exp(-iωt) (outgoing waves ~ exp(+ikr)/r).
+- With `cut_pml=true`, model-space quantities are restricted to the physical domain by discarding the PML. The misfit gradient then ignores the PML-zone sensitivity of the boundary cells, so it is approximate there. Use `cut_pml=false` for an exact gradient (it passes a Taylor test).
+- The examples call `JOLI.jo_type_mismatch_error_set(false)`, because some operators intentionally map real model perturbations to complex wavefields.

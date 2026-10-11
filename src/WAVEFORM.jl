@@ -1,5 +1,8 @@
 module WAVEFORM
 
+using LinearAlgebra, SparseArrays, Printf
+using JOLI
+
 # package code goes here
 include("Operators/Operators.jl")
 include("Krylov/Krylov.jl")

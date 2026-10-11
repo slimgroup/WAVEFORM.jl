@@ -1,14 +1,16 @@
 # A simple 2D transmission full waveform inversion experiment
-# to showcase how this framework operates. Much of the 
-# 
+# to showcase how this framework operates.
+#
+# Run from this directory with:  julia --project=. simple_inversion.jl
 
-using JOLI   # Linear operators
-using PyPlot # For plotting
-using Waveform
+using LinearAlgebra
+using JOLI       # Linear operators
+using PythonPlot # For plotting
+using WAVEFORM
+using OptimPackNextGen
 
-# Turn off annoying JOLI type checks
+# Downgrade JOLI type-mismatch errors to warnings
 JOLI.jo_type_mismatch_error_set(false)
-JOLI.jo_type_mismatch_warn_set(false)
 
 # number of model points in each direction (z,x)
 n = 101*[1;1];
@@ -59,7 +61,8 @@ npml = 20*ones(Int64,2,2);
 # Stencil used to discretize the PDE
 pde_scheme = helm2d_chen9p;
 
-# If true, 
+# If true, remove the PML when restricting to the model domain (the gradient
+# then ignores the PML-zone sensitivity of the boundary cells)
 cut_pml = true;
 
 implicit_matrix = false;
@@ -80,23 +83,23 @@ opts = PDEopts{Int64,Float64}(pde_scheme,comp_n,comp_d,comp_o,cut_pml,implicit_m
 
 v0 = vel_background*ones(n...); 
 v = copy(v0);
-v[div(n[1],3):2*div(n[1],3),div(n[2],3):2*div(n[2],3)] = 1.25*vel_background;
+v[div(n[1],3):2*div(n[1],3),div(n[2],3):2*div(n[2],3)] .= 1.25*vel_background;
 v = vec(v);
 v0 = vec(v0);
 
 # True velocity
-imshow(v);
+figure(); imshow(reshape(v,n...)); colorbar(); title("True velocity"); savefig("true_velocity.png")
 
-Q = eye(nsrc);
+Q = Matrix{Float64}(I,nsrc,nsrc);
 D = forw_model(v,Q,model,opts);
 
 
 # Plot a frequency slice
-imshow(real(D[:,1:nsrc]),aspect="auto");
+figure(); imshow(real(D[:,1:nsrc]),aspect="auto"); title("Frequency slice at $(model.freq[1]) Hz"); savefig("data_freq_slice.png")
 
 obj! = construct_pde_misfit(v,Q,D,model,opts,batch_mode=false)
 
-using OptimPackNextGen
 proj! = (xproj,x)->project_bounds!(x,minimum(v),maximum(v),xproj);
 vest = spg(obj!,proj!,v0,3,maxfc=50,verb=true)
-imshow(reshape(vest,model.n...),vmin=minimum(v),vmax=maximum(v))
+figure(); imshow(reshape(vest,model.n...),vmin=minimum(v),vmax=maximum(v)); colorbar(); title("Inverted velocity"); savefig("inverted_velocity.png")
+println("Relative model error: initial ", norm(v0-v)/norm(v), ", inverted ", norm(vest-v)/norm(v))

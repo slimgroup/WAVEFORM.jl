@@ -13,7 +13,7 @@ function FGMRES(A,
     size(A,1)==size(A,2) || throw(ArgumentError("A must be square"))
     size(b,1)==n || throw(ArgumentError("A and b must have compatible dimensions, got size of A $(size(A,1)), size of b $(length(b))"))
     size(b,2)==1 || throw(ArgumentError("b must be a vector"))
-    length(x0)==0 || length(x0)==n || throw(ArgumentErrror("x0 must be empty or a vector with size compatible with A"))
+    length(x0)==0 || length(x0)==n || throw(ArgumentError("x0 must be empty or a vector with size compatible with A"))
     if length(x0)==0 || norm(x0)<1e-10
         x = zeros(T,size(A,2))
         r = copy(b)
@@ -41,11 +41,11 @@ function FGMRES(A,
     res = Array{Float64,1}()
     push!(res,1.0)
     it_counter = 1
-    V = Matrix{T}(n,m+1)
+    V = Matrix{T}(undef,n,m+1)
     if prec_dirac
-        Z = Matrix{T}(n,0)
+        Z = Matrix{T}(undef,n,0)
     else
-        Z = Matrix{T}(n,m+1)
+        Z = Matrix{T}(undef,n,m+1)
     end    
     H = zeros(T,m+1,m)
     y = zeros(T,m)

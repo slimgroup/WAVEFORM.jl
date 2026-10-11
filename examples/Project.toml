@@ -1,0 +1,10 @@
+[deps]
+JOLI = "bb331ad6-a1cf-11e9-23da-9bcb53c69f6f"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+OptimPackNextGen = "080ffe24-4a27-4ab0-ad71-7b624e73ef8d"
+PythonPlot = "274fc56d-3b97-40fa-a1cd-1b4a50311bf9"
+WAVEFORM = "096c223d-937e-4c38-9d1a-433d2fb3a77d"
+
+[sources]
+OptimPackNextGen = {rev = "master", url = "https://github.com/emmt/OptimPackNextGen.jl"}
+WAVEFORM = {path = ".."}

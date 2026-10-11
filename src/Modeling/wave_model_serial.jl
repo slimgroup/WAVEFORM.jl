@@ -8,8 +8,8 @@ function PDEfunc!(op::Symbol,
                   input::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}},
                   model::Model{I,F},
                   opts::PDEopts{I,F};
-                  grad::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}}=Array{F}(0),
-                  srcfreqmask::AbstractArray{Bool,2}=Array{Bool}(0,0)) where {F<:AbstractFloat,I<:Integer}
+                  grad::Union{AbstractArray{F,1},AbstractArray{Complex{F},1}}=F[],
+                  srcfreqmask::AbstractArray{Bool,2}=Matrix{Bool}(undef,0,0)) where {F<:AbstractFloat,I<:Integer}
 
     op in pdefunc_ops || error("Unrecognized op $op, must be one of $pdefunc_ops")
     nsrc = length(model.xsrc)*length(model.ysrc)*length(model.zsrc)
@@ -20,10 +20,12 @@ function PDEfunc!(op::Symbol,
         srcfreqmask = trues(nsrc,nfreq)
     end
     size(srcfreqmask,1)==nsrc && size(srcfreqmask,2)==nfreq || error("srcfreqmask must be a nsrc x nfreq matrix")
-    Iactive = find(srcfreqmask)
+    Iactive = findall(vec(srcfreqmask))
     npde_out = length(Iactive)
-    (iS,iF) = ind2sub((nsrc,nfreq),Iactive)
-    freqsxsy = Array{Array{I,1},1}(nfreq)
+    iSF = CartesianIndices((nsrc,nfreq))[Iactive]
+    iS = getindex.(iSF,1)
+    iF = getindex.(iSF,2)
+    freqsxsy = Array{Array{I,1},1}(undef,nfreq)
 
     numcompsrc = (length(model.n)==2||model.n[3]==1) ? nsrc : 1
     length(Dobs)==0 || length(Dobs)==nrec*npde_out || error("Dobs must be a nrec*npde_out length vector")
@@ -37,10 +39,10 @@ function PDEfunc!(op::Symbol,
     elseif length(Q) ==nsrc*nsrc*nfreq
         Q = reshape(Q,(nsrc,nsrc,nfreq))
     else
-        throw(Exception("Q must be nsrc x nsrc or nsrc x nsrc x nfreq"))
+        throw(ArgumentError("Q must be nsrc x nsrc or nsrc x nsrc x nfreq"))
     end
     for i in 1:nfreq
-        J = find(iF.==i)
+        J = findall(iF.==i)
         if !isempty(J)
             freqsxsy[i] = iS[J]
         else
@@ -54,7 +56,7 @@ function PDEfunc!(op::Symbol,
         if op==:objective
             return 0.0
         elseif op in [:forw_model,:jacob_forw]
-            return (zeros{Complex{F}}(nrec,0))
+            return (zeros(Complex{F},nrec,0))
         else
             return (z)
         end
@@ -65,7 +67,7 @@ function PDEfunc!(op::Symbol,
         f = 0.0
         compute_grad = length(grad) > 0
         if compute_grad
-            length(grad)==length(v) || error("length(g) $(length(g)) != length(v) $(length(v))")
+            length(grad)==length(v) || error("length(grad) $(length(grad)) != length(v) $(length(v))")
             fill!(grad,0.0)
         end
         misfit = opts.misfit
@@ -117,7 +119,7 @@ function PDEfunc!(op::Symbol,
 
             # Wavefield solve
             U = H\q
-            sum_srcs = x->real(comp_to_phys*sum(x,2))
+            sum_srcs = x->real(comp_to_phys*vec(sum(x,dims=2)))
             if op==:objective
                 #figure()
                 #imshow(real(Pr*U),aspect="auto")
@@ -126,7 +128,7 @@ function PDEfunc!(op::Symbol,
                 f += ϕ
                 if compute_grad
                     V = H'\(-(Pr'*δϕ))
-                    grad .+= squeeze(sum_srcs(T(U)'*V),2)
+                    grad .+= sum_srcs(T(U)'*V)
                 end
             elseif op==:field
                 output[:,data_idx] = U
@@ -162,18 +164,25 @@ end
 
 function src_rec_interp_operators(model::Model{I,F},comp_grid::ComputationalGrid{I,F}) where {F<:AbstractFloat,I<:Integer}
     ndims = (length(model.n)==2||model.n[3]==1) ? 2 : 3
-    kaiser_window_param = 4
     DT = Complex{F}
-    RT = Complex{F}
-    opS(x,y) = joSincInterp(x,y,DomainT=DT,RangeT=RT)
+    opS(x,y,h) = grid_sinc_interp(x,y,h,DT)
     if ndims==2
         (zt,xt) = odn_to_grid(comp_grid)
-        Ps = joKron(opS(model.xsrc,xt),opS(model.zsrc,zt))
-        Pr = joKron(opS(xt,model.xrec),opS(zt,model.zrec))
+        (dz,dx) = comp_grid.comp_d
+        Ps = joKron(opS(model.xsrc,xt,dx),opS(model.zsrc,zt,dz))
+        Pr = joKron(opS(xt,model.xrec,dx),opS(zt,model.zrec,dz))
     else
         (xt,yt,zt) = odn_to_grid(comp_grid)
-        Ps = joKron(opS(model.zsrc,zt),opS(model.ysrc,yt),opS(model.xsrc,xt))
-        Pr = joKron(opS(zt,model.zrec),opS(yt,model.yrec),opS(xt,model.xrec))
+        (dx,dy,dz) = comp_grid.comp_d
+        Ps = joKron(opS(model.zsrc,zt,dz),opS(model.ysrc,yt,dy),opS(model.xsrc,xt,dx))
+        Pr = joKron(opS(zt,model.zrec,dz),opS(yt,model.yrec,dy),opS(xt,model.xrec,dx))
     end
     return (Ps,Pr)
+end
+
+# Sinc interpolation from grid xin to grid xout, with the sinc width set by
+# the computational grid spacing h. (JOLI's joSincInterp infers the spacing
+# from xin/xout, which fails when either is a single point.)
+function grid_sinc_interp(xin::AbstractArray{F,1},xout::AbstractArray{F,1},h::F,DT::DataType) where {F<:AbstractFloat}
+    return joMatrix(sinc.((xout .- xin')./h),DDT=DT,RDT=DT,name="grid_sinc_interp")
 end

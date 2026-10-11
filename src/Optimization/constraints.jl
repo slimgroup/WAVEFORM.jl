@@ -1,6 +1,6 @@
 export project_bounds!
 
-project_bounds!(v::Vector{T},minv::Union{Vector{T},T},maxv::Union{Vector{T},T}) where {T<:Real} = project_bounds!(v,minv,maxv,Array{T}(0))
+project_bounds!(v::Vector{T},minv::Union{Vector{T},T},maxv::Union{Vector{T},T}) where {T<:Real} = project_bounds!(v,minv,maxv,T[])
     
 function project_bounds!(v::Vector{T},minv::Union{Vector{T},T},maxv::Union{Vector{T},T},vproj::Vector{T}) where {T<:Real}    
     if length(vproj)==0

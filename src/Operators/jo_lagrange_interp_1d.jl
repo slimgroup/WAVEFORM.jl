@@ -11,7 +11,7 @@ export joLagrangeInterp1D
 # in the interval [minimum(xin),maximum(xin)]
 
 function joLagrangeInterp1D(xin,xout,T)
-    ik = find((xout .>= xin[1]) .& (xout .<= xin[end]))
+    ik = findall((xout .>= xin[1]) .& (xout .<= xin[end]))
     nout = length(xout)
     nin = length(xin)
     nk = length(ik)
@@ -34,7 +34,7 @@ function joLagrangeInterp1D(xin,xout,T)
             end
             a=c-2;b=c-1;d=c+1;
         end
-        I[l:l+3] = k;
+        I[l:l+3] .= k;
         J[l]   = a;
         S[l]   = ((xout[k]-xin[b])*(xout[k]-xin[c])*(xout[k]-xin[d]))/((xin[a]-xin[b])*(xin[a]-xin[c])*(xin[a]-xin[d]));
 

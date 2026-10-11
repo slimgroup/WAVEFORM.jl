@@ -1,4 +1,5 @@
-export Model, PDEFUNC_OP, STENCIL2D, STENCIL3D, PDEopts
+export Model, STENCIL2D, STENCIL3D, PDEopts
+export helm2d_chen9p, helm2d_std7, helm3d_operto27, helm3d_std9
 
 mutable struct Model{IntType<:Integer,FloatType<:AbstractFloat}
     n::AbstractArray{IntType,1}
