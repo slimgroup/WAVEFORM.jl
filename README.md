@@ -1,6 +1,8 @@
 WAVEFORM - a softWAre enVironmEnt For nOnlinear inveRse probleMs
 ================================================================
 
+[![CI](https://github.com/slimgroup/WAVEFORM.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/slimgroup/WAVEFORM.jl/actions/workflows/CI.yml)
+
 Waveform is a flexible and modular approach to solving PDE-constrained inverse problems that aims to
 - accurately reflect the underlying mathematics of the problem
 - produce *readable* code that reflects the underlying mathematics
@@ -11,7 +13,11 @@ For more details, as well as the full design of the software, see (https://arxiv
 
 Installation
 ------------
-Requires Julia 1.11 or newer (tested on 1.12 and 1.13). This package is not registered; from a clone of this repository:
+Requires Julia 1.11 or newer (tested on 1.12 and 1.13). To add it to your environment:
+```
+julia -e 'using Pkg; Pkg.add(url="https://github.com/slimgroup/WAVEFORM.jl")'
+```
+or, to develop from a clone of this repository:
 ```
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
