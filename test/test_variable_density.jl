@@ -14,4 +14,5 @@
     include("variable_density/test_coarse_fine.jl")
     include("variable_density/schur_fixture.jl")
     include("variable_density/test_schur_blocks.jl")
+    include("variable_density/test_schur_exact.jl")
 end
