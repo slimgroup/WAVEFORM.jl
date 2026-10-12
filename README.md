@@ -41,6 +41,22 @@ julia -t auto --project=. -e 'using IJulia; notebook(dir=".")'   # for the noteb
 ```
 Only non-distributed examples are available.
 
+Variable-density 2D Helmholtz
+-----------------------------
+`src/VariableDensity/` provides the optimized nine-point (Chen et al. 2013) Helmholtz operator with
+variable velocity and density and a stretched-coordinate PML, using the exp(-iωt) convention:
+```julia
+using WAVEFORM
+g  = Grid2D(101, 101, 10.0, 0.0, 0.0, (40, 40, 40, 40))         # nz, nx, h, oz, ox, PML widths
+m  = Material(fill(2000.0, 101, 101), fill(1000.0, 101, 101))     # velocity (m/s), density (kg/m³)
+ω  = 2π * 10.0
+op = HelmholtzPML(g, m, ω, select_chen_weights(points_per_wavelength(2000, 2000, 10, 10, 10)...), chen_stretch(g, ω; f0=10.0))
+A  = assemble_sparse(op)                # sparse oracle; NinePointStencil(op) gives the matrix-free form
+d  = predict_data(op, Acquisition([500.0], [500.0], [800.0], [500.0]))
+```
+Conventions and an audit of the legacy 2D code are documented in the NonLocal repository
+(`docs/conventions.md`).
+
 Notes
 -----
 - The 2D stencils use the exp(+iωt) time convention (outgoing waves ~ conj(H0(kr))), while the 3D 27-point stencil uses exp(-iωt) (outgoing waves ~ exp(+ikr)/r).
