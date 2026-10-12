@@ -8,4 +8,5 @@
     include("variable_density/test_constant_density_reference.jl")
     include("variable_density/test_acquisition.jl")
     include("variable_density/test_greens.jl")
+    include("variable_density/test_manufactured.jl")
 end
