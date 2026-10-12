@@ -3,4 +3,5 @@
     include("variable_density/test_pml.jl")
     include("variable_density/test_materials.jl")
     include("variable_density/test_chen9.jl")
+    include("variable_density/test_operator.jl")
 end
