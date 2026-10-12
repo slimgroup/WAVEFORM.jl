@@ -2,3 +2,4 @@
 # Conventions and the audit of the legacy 2D code: NonLocal repository, docs/conventions.md.
 include("grid.jl")
 include("pml.jl")
+include("materials.jl")
