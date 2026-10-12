@@ -8,9 +8,10 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WAVEFORM = "096c223d-937e-4c38-9d1a-433d2fb3a77d"
 
-[sources]
-WAVEFORM = {path = ".."}
+[sources.WAVEFORM]
+path = ".."
 
 [compat]
 ForwardDiff = "1"
+JOLI = "0.9"
 SpecialFunctions = "2"
