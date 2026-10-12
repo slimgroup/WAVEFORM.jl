@@ -31,4 +31,16 @@
     solve_A!(x, F, rhs)
     @test norm(A * x - rhs) < 1e-10 * norm(rhs)
     @test predict_data(op, acq, [1.0, 2.0]) ≈ D * [1.0, 2.0]
+    # Review: round-off at field-scale coordinates (e.g. UTM northing) is still on-node
+    gu = Grid2D(11, 11, 1.0, 6.0e6, 5.0e5, (3, 3, 3, 3))
+    zl = comp_z(gu, last(physical_z_range(gu)))
+    @test nnz(interpolation_matrix(gu, [nextfloat(zl, 4)], [5.0e5 + 2.5])) == 2
+    acqu = Acquisition([6.0e6 + 5], [5.0e5 + 5], [nextfloat(zl, 4)], [5.0e5 + 2.5])
+    @test size(receiver_matrix(gu, acqu)) == (1, ncomp(gu))
+    acq2 = Acquisition([6.0e6 + 5], [5.0e5 + 5], [zl + 0.2], [5.0e5 + 2.5])   # 0.2 cells into the PML
+    @test_throws ArgumentError receiver_matrix(gu, acq2)
+    @test nnz(receiver_matrix(gu, acq2; snap=0.3)) == 2                  # snap is forwarded
+    op2 = HelmholtzPML(gu, Material(fill(2000.0, 11, 11), fill(1000.0, 11, 11)), 2π * 5.0, CHEN2013_GLOBAL, no_stretch())
+    @test length(predict_data(op2, acq2, [1.0]; snap=0.3)) == 1
+    @test_throws ArgumentError interpolation_matrix(gu, [zl + 0.1], [5.0e5])
 end

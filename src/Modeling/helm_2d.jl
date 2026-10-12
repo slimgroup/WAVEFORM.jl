@@ -230,7 +230,8 @@ function pml_func1d(nx,nb,a0,f0,freq)
 # SCHEME FOR THE HELMHOLTZ EQUATION WITH PML", 2013
 #
   dist_from_int = x-> (x.<= nb[1]) .* (nb[1] .- x) + (x .> nx-nb[2]) .* (x .- (nx-nb[2]))
-  σ = x-> 2*pi*a0*f0*(dist_from_int(x)/maximum(nb)).^2
+  L = max(maximum(nb), 1)   # no PML in this dimension: distances are all 0, avoid 0/0
+  σ = x-> 2*pi*a0*f0*(dist_from_int(x)/L).^2
   func = x->1 .- im*σ(x)/freq
 end
 

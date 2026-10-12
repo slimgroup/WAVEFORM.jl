@@ -17,8 +17,9 @@ struct Acquisition
     end
 end
 
-# Positions within `snap` (in grid cells) of a node are treated as on the node, so round-off
-# cannot add a zero-weight neighbour in the PML.
+# Positions within `snap` (in grid cells) of a node, plus a round-off allowance of 16 ulp of the
+# coordinate, are treated as on the node, so round-off cannot add a zero-weight neighbour in the
+# PML even at field-scale (e.g. UTM) coordinates.
 function _bilinear_support(ξ::Real, snap::Real)
     i0 = floor(Int, ξ)
     t = ξ - i0
@@ -39,7 +40,9 @@ function interpolation_matrix(g::Grid2D, zs::AbstractVector, xs::AbstractVector;
     L = LinearIndices(comp_size(g))
     I, J, V = Int[], Int[], Float64[]
     for (p, (z, x)) in enumerate(zip(zs, xs))
-        for (iz, wz) in _bilinear_support(z_index(g, z), snap), (ix, wx) in _bilinear_support(x_index(g, x), snap)
+        sz = snap + 16 * eps(max(abs(z), abs(g.oz))) / g.h
+        sx = snap + 16 * eps(max(abs(x), abs(g.ox))) / g.h
+        for (iz, wz) in _bilinear_support(z_index(g, z), sz), (ix, wx) in _bilinear_support(x_index(g, x), sx)
             (iz in zr && ix in xr) || throw(ArgumentError("point $p at (z, x) = ($z, $x) has interpolation support outside the physical domain (PML or beyond)"))
             push!(I, p); push!(J, L[iz, ix]); push!(V, wz * wx)
         end
@@ -48,15 +51,16 @@ function interpolation_matrix(g::Grid2D, zs::AbstractVector, xs::AbstractVector;
 end
 
 "Receiver sampling `R` (`nrec × ncomp`)."
-receiver_matrix(g::Grid2D, acq::Acquisition) = interpolation_matrix(g, acq.rec_z, acq.rec_x)
+receiver_matrix(g::Grid2D, acq::Acquisition; snap::Real=1e-9) = interpolation_matrix(g, acq.rec_z, acq.rec_x; snap)
 
 """
-    source_matrix(g, acq)
+    source_matrix(g, acq; snap=1e-9)
 
 Source injection `B` (`ncomp × nsrc`): transposed bilinear interpolation scaled by `1/h^2`, a
 discrete delta for `-∇·(b∇u) - ω²a u = δ(x - x_s)`. Sources are physical, so `J = 1`.
 """
-source_matrix(g::Grid2D, acq::Acquisition) = sparse(transpose(interpolation_matrix(g, acq.src_z, acq.src_x))) ./ g.h^2
+source_matrix(g::Grid2D, acq::Acquisition; snap::Real=1e-9) =
+    sparse(transpose(interpolation_matrix(g, acq.src_z, acq.src_x; snap))) ./ g.h^2
 
 """
     acquisition_support(B, R)

@@ -11,15 +11,15 @@ factorize_A(op::HelmholtzPML) = lu(assemble_sparse(op))
 solve_A!(x::AbstractVecOrMat, F, rhs::AbstractVecOrMat) = ldiv!(x, F, rhs)
 
 """
-    predict_data(op, acq, q=I)
+    predict_data(op, acq, q=I; snap=1e-9)
 
 Receiver data `D = R A⁻¹ B q` (`nrec × nsrc`, or `nrec` for a vector `q`) for one material
 realization and frequency; all sources share the same factorization.
 """
-function predict_data(op::HelmholtzPML, acq::Acquisition, q=I)
+function predict_data(op::HelmholtzPML, acq::Acquisition, q=I; snap::Real=1e-9)
     g = op.grid
-    B = source_matrix(g, acq)
-    R = receiver_matrix(g, acq)
+    B = source_matrix(g, acq; snap)
+    R = receiver_matrix(g, acq; snap)
     rhs = B * q
     U = factorize_A(op) \ (q isa AbstractVector ? Vector{ComplexF64}(rhs) : Matrix{ComplexF64}(rhs))
     return R * U

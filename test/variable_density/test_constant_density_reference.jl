@@ -37,4 +37,9 @@
     st = chen_stretch(g, 2π * f; f0=f0, a0=a0)
     @test imag(conj(ez(1.0))) / imag(st.sz(1.0)) ≈ 2π * (nb - 1)^2 / nb^2
     @test imag(conj(ez(Float64(nzc)))) / imag(st.sz(Float64(nzc))) ≈ 2π
+    # Review: a dimension without PML (zero width on both sides) must give a finite legacy operator
+    npml_z = [5 0; 5 0]
+    @test all(isfinite, nonzeros(chen(v, f, npml_z)))
+    @test all(isfinite, nonzeros(WAVEFORM.helm2d_7pt(collect(size(v)), [h, h], npml_z, f, v, f0, "m/s")[1]))
+    @test rel(ours(v, f, npml_z, select_chen_weights(G, G)), chen(v, f, npml_z)) < 1e-13
 end
