@@ -18,7 +18,7 @@ realization and frequency; all sources share the same factorization.
 """
 function predict_data(op::HelmholtzPML, acq::Acquisition, q=I; snap::Real=1e-9)
     g = op.grid
-    B = source_matrix(g, acq; snap)
+    B = source_matrix(g, acq, op.weights; snap)
     R = receiver_matrix(g, acq; snap)
     rhs = B * q
     U = factorize_A(op) \ (q isa AbstractVector ? Vector{ComplexF64}(rhs) : Matrix{ComplexF64}(rhs))

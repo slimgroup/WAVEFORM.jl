@@ -17,6 +17,6 @@
     errs = [norm(data(h) - dref) / norm(dref) for h in (10.0, 5.0, 2.5)]
     rates = [log2(errs[i] / errs[i+1]) for i in 1:2]
     @info "density interface" errs rates
-    @test all(rates .>= 1.0)                 # measured 1.30, 1.62
-    @test errs[end] < 1e-2                   # measured 7.0e-3
+    @test all(rates .>= 1.0)                 # measured 1.23, 1.59
+    @test errs[end] < 1e-2                   # measured 6.8e-3
 end

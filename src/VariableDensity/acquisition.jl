@@ -1,4 +1,4 @@
-export Acquisition, interpolation_matrix, receiver_matrix, source_matrix, acquisition_support
+export Acquisition, interpolation_matrix, receiver_matrix, mass_matrix, source_matrix, acquisition_support
 
 """
     Acquisition(src_z, src_x, rec_z, rec_x)
@@ -54,13 +54,44 @@ end
 receiver_matrix(g::Grid2D, acq::Acquisition; snap::Real=1e-9) = interpolation_matrix(g, acq.rec_z, acq.rec_x; snap)
 
 """
-    source_matrix(g, acq; snap=1e-9)
+    mass_matrix(g, w)
 
-Source injection `B` (`ncomp × nsrc`): transposed bilinear interpolation scaled by `1/h^2`, a
-discrete delta for `-∇·(b∇u) - ω²a u = δ(x - x_s)`. Sources are physical, so `J = 1`.
+The nine-point mass average `W` of the operator's `-ω² W(μu)` term as a sparse `ncomp × ncomp`
+matrix (`w0` centre, `w1/4` edges, `w2/4` corners; Dirichlet closure). Symmetric; `I` for
+`FIVE_POINT`.
 """
-source_matrix(g::Grid2D, acq::Acquisition; snap::Real=1e-9) =
-    sparse(transpose(interpolation_matrix(g, acq.src_z, acq.src_x; snap))) ./ g.h^2
+function mass_matrix(g::Grid2D, w::Chen9Weights)
+    nzc, nxc = comp_size(g)
+    L = LinearIndices((nzc, nxc))
+    I, J, V = Int[], Int[], Float64[]
+    for ix in 1:nxc, iz in 1:nzc, dx in -1:1, dz in -1:1
+        c = dz == 0 && dx == 0 ? w.w0 : (dz == 0 || dx == 0) ? w.w1 / 4 : w.w2 / 4
+        (c != 0 && 1 <= iz + dz <= nzc && 1 <= ix + dx <= nxc) || continue
+        push!(I, L[iz, ix]); push!(J, L[iz + dz, ix + dx]); push!(V, c)
+    end
+    return sparse(I, J, V, nzc * nxc, nzc * nxc)
+end
+
+"""
+    source_matrix(g, acq, w; snap=1e-9)
+
+Source injection `B = W Pᵀ / h²` (`ncomp × nsrc`): the transposed bilinear interpolation `Pᵀ`
+(a discrete delta for `-∇·(b∇u) - ω²a u = δ(x - x_s)`) averaged by the same mass stencil `W`
+as the operator (`mass_matrix(g, w)`). The plain delta `Pᵀ/h²` scales the response by
+`1/M(kh) ≈ 1 + (w1/4 + w2/2)(kh)²`, `M` the symbol of `W`, which differs between grids; the
+mass-consistent source removes that factor, so coarse and fine grids predict the same data.
+The averaged support must lie in the physical domain (`J = 1`), else `ArgumentError`.
+"""
+function source_matrix(g::Grid2D, acq::Acquisition, w::Chen9Weights; snap::Real=1e-9)
+    B = mass_matrix(g, w) * sparse(transpose(interpolation_matrix(g, acq.src_z, acq.src_x; snap))) ./ g.h^2
+    zr, xr = physical_z_range(g), physical_x_range(g)
+    C = CartesianIndices(comp_size(g))
+    for (i, j, v) in zip(findnz(B)...)
+        (v != 0 && !(C[i][1] in zr && C[i][2] in xr)) &&
+            throw(ArgumentError("source $j at (z, x) = ($(acq.src_z[j]), $(acq.src_x[j])) is within one node of the PML or grid edge; its mass-averaged support leaves the physical domain"))
+    end
+    return B
+end
 
 """
     acquisition_support(B, R)

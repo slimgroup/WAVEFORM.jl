@@ -11,10 +11,10 @@
         op = HelmholtzPML(g, Material(fill(c0, n, n), fill(ρ0, n, n)), ω, w, chen_stretch(g, ω; f0=10.0))
         d = predict_data(op, acq, [1.0])
         G = ρ0 .* (im / 4) .* hankelh1.(0, (ω / c0) .* r)
-        kh = ω / c0 * h
-        @test norm(d - G) / norm(G) < 0.12 * kh^2              # measured 0.083–0.085 (kh)²
-        cfit = (d' * G) / (d' * d)                              # one complex scale (source normalization)
-        @test norm(cfit * d - G) / norm(G) < 1e-3               # measured ≤ 2.3e-4
-        @test abs(cfit - 1) < 0.12 * kh^2
+        # Mass-consistent source W δ/h²: no grid-dependent amplitude factor. With a plain δ/h² the
+        # response was scaled by 1/M(kh) ≈ 1 + 0.085 (kh)² (M = symbol of W), which differs per grid.
+        @test norm(d - G) / norm(G) < 1e-3                      # measured 4.5e-5, 2.1e-4, 2.4e-4
+        cfit = (d' * G) / (d' * d)
+        @test abs(cfit - 1) < 1e-3
     end
 end
