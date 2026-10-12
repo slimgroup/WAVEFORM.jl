@@ -78,20 +78,6 @@ Audit of the legacy 2D code (`helm2d_chen2013`, `helm2d_7pt`, `pml_func1d`):
   (2π stronger damping than the paper), its lower-side distance is one cell short, and both sides use
   the larger thickness max(nb); the weight selection G = min(v)/(h f) assumes velocity in m/s.
 
-### Coarse/fine reduction
-
-`build_coarse_fine_maps` splits the unknowns into retained (`c`) and eliminated (`f`) sets: every
-`stride`-th physical node (parity anchored at physical node (1,1)), all PML nodes and the
-acquisition support. `schur_reduction` builds the exact Schur complement `S = A_cc - A_cf A_ff⁻¹ A_fc`
-with `B_eff`, `R_eff` and `D_direct` for small problems; `apply_schur!`/`apply_schur_adj!` apply `S`
-and `S*` matrix-free. An ill-conditioned `A_ff` raises `IllConditionedFineBlock` instead of being
-regularized.
-```julia
-s  = build_coarse_fine_maps(g, acquisition_support(B, R); stride=2)
-sr = schur_reduction(assemble_sparse(op), B, R, s)
-d  = reduced_data(sr, q)               # equals R A⁻¹ B q
-```
-
 Notes
 -----
 - The 2D stencils use the exp(+iωt) time convention (outgoing waves ~ conj(H0(kr))), while the 3D 27-point stencil uses exp(-iωt) (outgoing waves ~ exp(+ikr)/r).

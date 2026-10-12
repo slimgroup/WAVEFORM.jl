@@ -1,7 +1,7 @@
 name = "WAVEFORM"
 uuid = "096c223d-937e-4c38-9d1a-433d2fb3a77d"
 authors = ["Curt Da Silva <curt.dasilva@gmail.com>"]
-version = "0.4.0"
+version = "0.3.0"
 
 [deps]
 JOLI = "bb331ad6-a1cf-11e9-23da-9bcb53c69f6f"
