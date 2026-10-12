@@ -10,4 +10,5 @@
     include("variable_density/test_greens.jl")
     include("variable_density/test_manufactured.jl")
     include("variable_density/test_density_interface.jl")
+    include("variable_density/test_pml_reflection.jl")
 end
