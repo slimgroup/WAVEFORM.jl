@@ -6,6 +6,12 @@ OptimPackNextGen = "080ffe24-4a27-4ab0-ad71-7b624e73ef8d"
 PythonPlot = "274fc56d-3b97-40fa-a1cd-1b4a50311bf9"
 WAVEFORM = "096c223d-937e-4c38-9d1a-433d2fb3a77d"
 
-[sources]
-OptimPackNextGen = {rev = "master", url = "https://github.com/emmt/OptimPackNextGen.jl"}
-WAVEFORM = {path = ".."}
+[sources.OptimPackNextGen]
+rev = "master"
+url = "https://github.com/emmt/OptimPackNextGen.jl"
+
+[sources.WAVEFORM]
+path = ".."
+
+[compat]
+IJulia = "1"
