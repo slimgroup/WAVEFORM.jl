@@ -32,13 +32,22 @@ julia -t auto --project=. -e 'using Pkg; Pkg.test()'
 
 Examples
 --------
-The `examples/` directory has its own environment, which adds PythonPlot for plotting and OptimPackNextGen for the SPG optimizer. OptimPackNextGen is not in the General registry and is pulled from GitHub through `[sources]`:
+The `examples/` directory has its own environment, which adds PythonPlot for plotting, IJulia for the notebooks and OptimPackNextGen for the SPG optimizer. OptimPackNextGen is not in the General registry and is pulled from GitHub through `[sources]`:
 ```
 cd examples
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. simple_inversion.jl
-julia -t auto --project=. -e 'using IJulia; notebook(dir=".")'   # for the notebooks, if IJulia is installed
 ```
+The notebooks are stored with their outputs, so the figures show on GitHub. To run them, register a Jupyter kernel that starts in the notebook's directory with this environment (once), then open them with Jupyter:
+```
+julia --project=. -e 'using IJulia; installkernel("Julia", "--project=@.")'
+jupyter lab      # or: julia --project=. -e 'using IJulia; notebook(dir=".")'
+```
+- `3D Helmholtz Example.ipynb`: point-source wavefield of the 27-point operator, orthogonal slices and a comparison with the analytic Green's function.
+- `Simple 2D FWI Example.ipynb`: transmission FWI of a box anomaly; data, misfit and model-error histories, inverted models, errors and profiles, with and without frequency continuation.
+
+PythonPlot installs matplotlib through CondaPkg into `examples/.CondaPkg`. If the repository lives in a cloud-synced folder (Dropbox, iCloud) that does not preserve that environment, point CondaPkg elsewhere, e.g. `JULIA_CONDAPKG_ENV=$HOME/.julia/conda_environments/waveform-examples`; pass it to the kernel with `installkernel(...; env=Dict("JULIA_CONDAPKG_ENV" => ...))`.
+
 Only non-distributed examples are available.
 
 Notes
