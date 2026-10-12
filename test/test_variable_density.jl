@@ -11,4 +11,5 @@
     include("variable_density/test_manufactured.jl")
     include("variable_density/test_density_interface.jl")
     include("variable_density/test_pml_reflection.jl")
+    include("variable_density/test_coarse_fine.jl")
 end
