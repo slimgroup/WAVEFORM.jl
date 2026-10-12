@@ -11,5 +11,6 @@ include("Modeling/Modeling.jl")
 include("Optimization/Optimization.jl")
 include("Multigrid/Multigrid.jl")
 include("Interface/Interface.jl")
+include("VariableDensity/VariableDensity.jl")
 
 end # module
