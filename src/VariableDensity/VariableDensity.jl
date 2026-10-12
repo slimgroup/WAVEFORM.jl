@@ -3,3 +3,4 @@
 include("grid.jl")
 include("pml.jl")
 include("materials.jl")
+include("chen9_weights.jl")
