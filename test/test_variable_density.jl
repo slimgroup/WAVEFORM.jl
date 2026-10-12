@@ -6,4 +6,5 @@
     include("variable_density/test_operator.jl")
     include("variable_density/test_stencil.jl")
     include("variable_density/test_constant_density_reference.jl")
+    include("variable_density/test_acquisition.jl")
 end
