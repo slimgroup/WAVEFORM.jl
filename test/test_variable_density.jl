@@ -12,4 +12,6 @@
     include("variable_density/test_density_interface.jl")
     include("variable_density/test_pml_reflection.jl")
     include("variable_density/test_coarse_fine.jl")
+    include("variable_density/schur_fixture.jl")
+    include("variable_density/test_schur_blocks.jl")
 end
