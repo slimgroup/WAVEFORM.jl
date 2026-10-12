@@ -26,4 +26,9 @@
         As = sparse(ComplexF64[2 1 0; 1 0 1; 0 1 2]); s3 = CoarseFineSplit((3, 1), [true, false, true])
         @test_throws IllConditionedFineBlock schur_reduction(As, ones(3, 1), ones(1, 3), s3)
     end
+    @testset "input sizes (review)" begin
+        s = build_coarse_fine_maps(g; stride=2)
+        @test_throws DimensionMismatch schur_reduction(A, vcat(B, B), R, s)
+        @test_throws DimensionMismatch schur_reduction(A, B, hcat(R, R), s)
+    end
 end

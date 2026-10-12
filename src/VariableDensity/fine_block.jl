@@ -38,11 +38,14 @@ function rcond_estimate(A::AbstractMatrix, F)
 end
 
 """
-    FineBlockLU(A, s; rcond_min=1e-12)
+    FineBlockLU(A, s; rcond_min=1e-8)
 
 Exact sparse-LU solver for the eliminated block `A_ff = P_f A E_f` (the tiny-grid oracle of
 spec Sec. 8). Throws `IllConditionedFineBlock` if `A_ff` is singular or its estimated
-reciprocal condition number is below `rcond_min`; it never regularizes.
+reciprocal condition number is below `rcond_min`; it never regularizes. Solves with `A_ff`
+lose about `eps / rcond` in relative accuracy, and so do the reduced data and fields: near an
+interior resonance of a lossless `A_ff` (measured) rcond 2.3e-8 gave data errors of 1.3e-9 and
+2.3e-12 gave 1.3e-5. The default keeps such losses near 1e-9; lower it only knowingly.
 """
 struct FineBlockLU{T}
     split::CoarseFineSplit
@@ -50,7 +53,7 @@ struct FineBlockLU{T}
     rcond::Float64
 end
 
-function FineBlockLU(A::SparseMatrixCSC, s::CoarseFineSplit; rcond_min::Real=1e-12)
+function FineBlockLU(A::SparseMatrixCSC, s::CoarseFineSplit; rcond_min::Real=1e-8)
     size(A) == (length(s), length(s)) || throw(DimensionMismatch("A is $(size(A)), split has $(length(s)) unknowns"))
     isempty(s.jf) && return FineBlockLU(s, nothing, 1.0)
     Aff = A[s.jf, s.jf]

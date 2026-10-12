@@ -18,12 +18,15 @@ struct SchurReduction{T}
 end
 
 """
-    schur_reduction(A, B, R, s; rcond_min=1e-12)
+    schur_reduction(A, B, R, s; rcond_min=1e-8)
 
 Exact Schur reduction of the sparse system `A`, sources `B` (`N × n_s`) and receivers `R`
 (`n_r × N`). Throws `IllConditionedFineBlock` (see `FineBlockLU`).
 """
-function schur_reduction(A::SparseMatrixCSC, B::AbstractMatrix, R::AbstractMatrix, s::CoarseFineSplit; rcond_min::Real=1e-12)
+function schur_reduction(A::SparseMatrixCSC, B::AbstractMatrix, R::AbstractMatrix, s::CoarseFineSplit; rcond_min::Real=1e-8)
+    N = length(s)
+    size(B, 1) == N || throw(DimensionMismatch("B has $(size(B, 1)) rows, the split has $N unknowns"))
+    size(R, 2) == N || throw(DimensionMismatch("R has $(size(R, 2)) columns, the split has $N unknowns"))
     fb = FineBlockLU(A, s; rcond_min)
     ic, jf = s.ic, s.jf
     Bm, Rm = Matrix{ComplexF64}(B), Matrix{ComplexF64}(R)

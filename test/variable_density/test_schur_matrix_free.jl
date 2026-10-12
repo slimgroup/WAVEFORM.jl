@@ -18,4 +18,15 @@
         uc = sr.S \ fc
         @test rel(reconstruct_field(St, s, fb, f, uc), u) < 1e-10
     end
+    @testset "solver/split mismatch (review)" begin
+        s = build_coarse_fine_maps(g; stride=2)
+        fb = FineBlockLU(St, s)
+        r = copy(s.retained); r[s.ic[end]], r[s.jf[1]] = false, true          # same N_f, different split
+        s2 = CoarseFineSplit(s.grid_size, r)
+        v = randn(ComplexF64, length(s2.ic)); f = randn(ComplexF64, length(s2))
+        @test_throws ArgumentError apply_schur!(similar(v), St, s2, fb, v)
+        @test_throws ArgumentError apply_schur_adj!(similar(v), St, s2, fb, v)
+        @test_throws ArgumentError reduced_rhs!(similar(v), St, s2, fb, f)
+        @test_throws ArgumentError reconstruct_field(St, s2, fb, f, v)
+    end
 end

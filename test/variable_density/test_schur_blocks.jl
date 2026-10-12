@@ -25,9 +25,32 @@
         exact_e = 1 / cond(Matrix(Ae)[2:3, 2:3], 1)                        # ≈ 2.5e-10
         @test abs(det(Matrix(Ae))) > 1                                     # the full matrix is fine
         @test_throws IllConditionedFineBlock FineBlockLU(Ae, s4; rcond_min=1e-6)
-        @test isapprox(FineBlockLU(Ae, s4).rcond, exact_e; rtol=1e-6)     # passes the default 1e-12
+        @test isapprox(FineBlockLU(Ae, s4; rcond_min=0.0).rcond, exact_e; rtol=1e-6)   # estimator accuracy
+        @test_throws IllConditionedFineBlock FineBlockLU(Ae, s4)            # below the default 1e-8
         # nothing to eliminate
         s1 = build_coarse_fine_maps(g; stride=1)
         @test FineBlockLU(A, s1).rcond == 1
+    end
+    @testset "lossless fine block at an interior resonance (review)" begin
+        # With the physical boundary ring retained, every eliminated row is a physical row away
+        # from the PML: A_ff(ω) = K - ω² M is real and singular at the pencil's eigenfrequencies,
+        # while A (damped by the PML) stays well conditioned. The default guard must fire there.
+        gl = Grid2D(11, 11, 10.0, 0.0, 0.0, (5, 5, 5, 5))
+        ml = Material(fill(2000.0, 11, 11), fill(1000.0, 11, 11))
+        zr, xr = physical_z_range(gl), physical_x_range(gl); L = LinearIndices(comp_size(gl))
+        ring = [L[i, j] for i in zr, j in xr if i in (first(zr), last(zr)) || j in (first(xr), last(xr))]
+        sl = build_coarse_fine_maps(gl, ring; stride=4)
+        Aω(ω) = assemble_sparse(HelmholtzPML(gl, ml, ω, CHEN2013_GLOBAL, chen_stretch(gl, ω; f0=10.0)))
+        ω1, ω2 = 2π * 10.0, 2π * 20.0
+        Aff1, Aff2 = Matrix(block_matrix(Aω(ω1), sl, :f, :f)), Matrix(block_matrix(Aω(ω2), sl, :f, :f))
+        M = (Aff1 - Aff2) / (ω2^2 - ω1^2); K = Aff1 + ω1^2 * M
+        @test iszero(imag(K)) && iszero(imag(M))                           # lossless
+        ωs = sqrt.(filter(>(0), real(eigvals(real(K), real(M)))))
+        ωr = ωs[argmin(abs.(ωs .- 2π * 20.0))]
+        Ar = Aω(ωr)
+        @test rcond_estimate(Ar, lu(Ar)) > 1e-4                           # the full operator is fine
+        err = try FineBlockLU(Ar, sl); nothing catch e; e end
+        @test err isa IllConditionedFineBlock && err.threshold == 1e-8 && err.rcond < 1e-8
+        @test FineBlockLU(Aω(1.01 * ωr), sl).rcond > 1e-8                  # 1 % away it is accepted
     end
 end
