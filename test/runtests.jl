@@ -1,8 +1,10 @@
 using WAVEFORM
 using JOLI
 using LinearAlgebra
+using SparseArrays
 using Random
 using SpecialFunctions
+using ForwardDiff
 using Test
 
 JOLI.jo_type_mismatch_error_set(false)
@@ -14,4 +16,5 @@ convergence_rate(h,err) = (x = log10.(h); y = log10.(err); sum((x.-sum(x)/length
 @testset "WAVEFORM" begin
     include("test_2D.jl")
     include("test_3D.jl")
+    include("test_variable_density.jl")
 end

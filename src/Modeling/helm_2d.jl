@@ -27,8 +27,8 @@ function helm2d_7pt(n,d,npml,freq,v,f0,unit::String)
 
   nz,nx = n
   Δz,Δx = d
-  npz = npml[1,:]
-  npx = npml[2,:]
+  npz = npml[:,1]   # npml = [z_lo x_lo; z_hi x_hi] (layout built in helm.jl)
+  npx = npml[:,2]
   a0 = 1.79
 
   (k,dk,ddk) = param_to_wavenum(v,freq,unit)
@@ -137,33 +137,17 @@ function helm2d_chen2013(n,d,npml,freq,v,f0,unit::String)
     Δz==Δx || error("z and x spacing must be identical")
     f0 > 0 || error("f0 must be positive")
     h = Δz
-    npz = npml[1,:]
-    npx = npml[2,:]
+    npz = npml[:,1]   # npml = [z_lo x_lo; z_hi x_hi] (layout built in helm.jl)
+    npx = npml[:,2]
     a0 = 1.79
-    
+
     (k,dk,ddk) = param_to_wavenum(v,freq,unit)
 
     vmin = minimum(vec(v))
-    vmax = maximum(vec(v))
-    Gmin = vmin/(h*freq)
-    Gmax = vmax/(h*freq)
-    IG = Gmin
-    if IG >= 2.5 && IG <= 3
-        b,d,e = (0.6803,0.444,0.0008)
-    elseif IG >= 3 && IG <= 4
-        b,d,e = (0.73427,0.4088,-0.0036)
-    elseif IG >= 4 && IG <= 5
-        b,d,e = (0.7840,0.3832,-0.0060)
-    elseif IG >= 5 && IG <= 6
-        b,d,e = (0.802,0.3712,-0.0072)
-    elseif IG >= 6 && IG <= 8
-        b,d,e = (0.8133,0.3637,-0.0075)
-    elseif IG >= 8 && IG <= 10
-        b,d,e = (0.8219,0.3578,-0.0078)
-    elseif IG >= 10 && IG <= 400
-        b,d,e = (0.8271,0.3540,-0.0080)
-    end
-    c = 1-d-e
+    IG = vmin/(h*freq)
+    # Chen et al. (2013) Table 1 via the shared table (paper-exact; ArgumentError outside [2.5, 400])
+    w = select_chen_weights(IG, IG)
+    b, c, d, e = w.β, w.w0, w.w1, w.w2
 
     ex = pml_func1d(nx,npx,a0,f0,freq)
     ez = pml_func1d(nz,npz,a0,f0,freq)
@@ -246,7 +230,8 @@ function pml_func1d(nx,nb,a0,f0,freq)
 # SCHEME FOR THE HELMHOLTZ EQUATION WITH PML", 2013
 #
   dist_from_int = x-> (x.<= nb[1]) .* (nb[1] .- x) + (x .> nx-nb[2]) .* (x .- (nx-nb[2]))
-  σ = x-> 2*pi*a0*f0*(dist_from_int(x)/maximum(nb)).^2
+  L = max(maximum(nb), 1)   # no PML in this dimension: distances are all 0, avoid 0/0
+  σ = x-> 2*pi*a0*f0*(dist_from_int(x)/L).^2
   func = x->1 .- im*σ(x)/freq
 end
 
