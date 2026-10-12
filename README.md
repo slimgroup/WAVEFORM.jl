@@ -54,8 +54,20 @@ op = HelmholtzPML(g, m, ω, select_chen_weights(points_per_wavelength(2000, 2000
 A  = assemble_sparse(op)                # sparse oracle; NinePointStencil(op) gives the matrix-free form
 d  = predict_data(op, Acquisition([500.0], [500.0], [800.0], [500.0]))
 ```
-Conventions and an audit of the legacy 2D code are documented in the NonLocal repository
-(`docs/conventions.md`).
+Discretization: `A u = -Q_z D_x u - Q_x D_z u - ω² W(μ u)` with face buoyancy from the harmonic mean
+of nodal buoyancies, α_x = b s_z/s_x, α_z = b s_x/s_z and μ = a s_x s_z (stretch s = 1 + iσ/ω, Chen
+profile σ = 2π a0 f0 (l/L)², per side). Point sources are mass-consistent, `B = W Pᵀ/h²` with the same
+nine-point average `W` (`mass_matrix`), so the source amplitude does not depend on the grid; a source
+must be at least one node away from the PML. With ρ = 1 and the legacy PML profile the operator equals
+`-conj(helm2d_chen2013)` (and, with `FIVE_POINT` weights, `-conj(helm2d_7pt)`) to round-off.
+
+Audit of the legacy 2D code (`helm2d_chen2013`, `helm2d_7pt`, `pml_func1d`):
+- Fixed: Table 1 typos (G ∈ [3,4]: b = 0.7427, not 0.73427; G ∈ [2.5,3]: d = 0.4444, not 0.444); PML
+  widths are read from the columns of `npml = [z_lo x_lo; z_hi x_hi]`; G outside [2.5, 400] raises an
+  `ArgumentError` instead of an `UndefVarError`; no NaN when a dimension has no PML.
+- Unchanged, for backward compatibility: `pml_func1d` divides σ by the frequency in Hz instead of ω
+  (2π stronger damping than the paper), its lower-side distance is one cell short, and both sides use
+  the larger thickness max(nb); the weight selection G = min(v)/(h f) assumes velocity in m/s.
 
 Notes
 -----

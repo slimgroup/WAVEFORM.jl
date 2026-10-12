@@ -21,7 +21,7 @@ PML of Chen et al. (2013), Sec. 2: σ(l) = 2π a0 f0 (l/L)^2, with `l` the dista
 PML from the outermost physical node and `L` that side's PML thickness. The paper writes
 e = 1 - iσ/ω for exp(+iωt); this is the conjugate s = 1 + iσ/ω for exp(-iωt). The legacy
 `pml_func1d` divides σ by the frequency in Hz (2π stronger damping) and offsets the
-lower-side distance by one cell (NonLocal docs/conventions.md, findings 1-2).
+lower-side distance by one cell (README.md, audit of the legacy 2D code).
 """
 function chen_stretch(g::Grid2D, ω::Real; f0::Real, a0::Real=1.79)
     ω > 0 || throw(ArgumentError("ω must be positive, got $ω"))

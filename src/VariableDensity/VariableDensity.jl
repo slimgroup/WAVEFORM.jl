@@ -1,5 +1,5 @@
 # Variable-density optimized nine-point Helmholtz-PML operator in 2D (exp(-iωt) convention).
-# Conventions and the audit of the legacy 2D code: NonLocal repository, docs/conventions.md.
+# Conventions and the audit of the legacy 2D code: README.md, "Variable-density 2D Helmholtz".
 include("grid.jl")
 include("pml.jl")
 include("materials.jl")
